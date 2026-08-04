@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Jeju Dive Club Comparison Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<style>
+body{font-family:system-ui,Arial,sans-serif;background:#0b1e2d;color:#eaf3f7;margin:0;padding:20px}
+h1{color:#4fd1c5;font-size:22px}
+table{border-collapse:collapse;width:100%;margin-top:16px;font-size:13px}
+th,td{border:1px solid #234;padding:8px 10px;text-align:left}
+th{background:#123a4d;cursor:pointer;position:sticky;top:0;user-select:none}
+th:hover{background:#175373}
+tr:nth-child(even){background:#0f2937}
+tr:hover{background:#1b4b63}
+.badge-true{color:#4fd1c5;font-weight:bold}
+.badge-false{color:#e05c5c}
+.arrow{font-size:11px;margin-left:4px;opacity:.7}
+a{color:#7fd8f5}
+#status{margin-bottom:10px;color:#9fb}
+</style>
+</head>
+<body>
+<h1>Jeju Dive Club Comparison Dashboard</h1>
+<div id="status">Loading database...</div>
+<table id="clubTable">
+<thead>
+<tr>
+<th data-key="name">Name</th>
+<th data-key="city">City</th>
+<th data-key="size">Size</th>
+<th data-key="num_instructors">Instructors</th>
+<th data-key="years_of_existence">Years</th>
+<th data-key="languages_spoken">Languages</th>
+<th data-key="certifications">Certs</th>
+<th data-key="owns_boat">Boat</th>
+<th data-key="tec_diving">Tec</th>
+<th data-key="freediving">Free</th>
+<th data-key="estimated_price_per_dive_krw">Price/dive (KRW)</th>
+<th data-key="avg_rating">Avg rating</th>
+<th data-key="website_url">Website</th>
+<th data-key="naver_map_url">Naver Map</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<script>
+let clubs = [];
+let sortKey = 'name';
+let sortAsc = true;
+
+function boolBadge(v){
+  if(v===1||v===true) return '<span class="badge-true">Yes</span>';
+  if(v===0||v===false) return '<span class="badge-false">No</span>';
+  return '-';
+}
+
+function render(){
+  const tbody = document.querySelector('#clubTable tbody');
+  tbody.innerHTML = '';
+  const sorted = [...clubs].sort((a,b)=>{
+    let av=a[sortKey], bv=b[sortKey];
+    if(av==null) av = typeof bv==='number' ? -Infinity : '';
+    if(bv==null) bv = typeof av==='number' ? -Infinity : '';
+    if(typeof av==='string') av=av.toLowerCase();
+    if(typeof bv==='string') bv=bv.toLowerCase();
+    if(av<bv) return sortAsc?-1:1;
+    if(av>bv) return sortAsc?1:-1;
+    return 0;
+  });
+  for(const c of sorted){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${c.name}</td>
+      <td>${c.city}</td>
+      <td>${c.size||'-'}</td>
+      <td>${c.num_instructors ?? '-'}</td>
+      <td>${c.years_of_existence ?? '-'}</td>
+      <td>${c.languages_spoken||'-'}</td>
+      <td>${c.certifications||'-'}</td>
+      <td>${boolBadge(c.owns_boat)}</td>
+      <td>${boolBadge(c.tec_diving)}</td>
+      <td>${boolBadge(c.freediving)}</td>
+      <td>${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() : '-'}</td>
+      <td>${c.avg_rating ?? '-'}</td>
+      <td>${c.website_url ? `<a href="${c.website_url}" target="_blank">link</a>` : '-'}</td>
+      <td>${c.naver_map_url ? `<a href="${c.naver_map_url}" target="_blank">map</a>` : '-'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+  document.querySelectorAll('th').forEach(th=>{
+    th.innerHTML = th.textContent.replace(/\s*[▲▼]$/,'');
+    if(th.dataset.key===sortKey){
+      th.innerHTML += `<span class="arrow">${sortAsc?'▲':'▼'}</span>`;
+    }
+  });
+}
+
+document.querySelectorAll('th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(sortKey===key){ sortAsc = !sortAsc; } else { sortKey = key; sortAsc = true; }
+    render();
+  });
+});
+
+async function loadDb(){
+  const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
+  const resp = await fetch('dive_clubs.db');
+  const buf = await resp.arrayBuffer();
+  const db = new SQL.Database(new Uint8Array(buf));
+  const res = db.exec('SELECT * FROM v_club_dashboard');
+  if(res.length){
+    const cols = res[0].columns;
+    clubs = res[0].values.map(row=>{
+      const obj = {};
+      cols.forEach((c,i)=>obj[c]=row[i]);
+      return obj;
+    });
+  }
+  document.getElementById('status').textContent = `Loaded ${clubs.length} dive clubs.`;
+  render();
+}
+loadDb().catch(err=>{
+  document.getElementById('status').textContent = 'Error loading database: '+err;
+  console.error(err);
+});
+</script>
+</body>
+</html>
