@@ -128,3 +128,15 @@ Choose a license before public release. If this repository is private or persona
 - Jeju dive operators and public map/review listings used as data sources.
 - SQLite and sql.js for enabling browser-side database access.
 - GitHub Pages for static deployment.
+
+
+## Map and Sorting Behavior
+
+The dashboard includes a Leaflet map that displays clubs with known GPS coordinates. The map and the table are synchronized:
+
+- Clicking a column header changes the active sort criterion.
+- Whenever the sorting criterion changes, the table re-renders and the map updates to reflect the same sorted club set.
+- Clicking a table row highlights the matching club marker on the map.
+- Clicking a map marker highlights the corresponding row in the table.
+
+A **Suggest edits** link is included in the interface and points to the repository issue tracker so users can report incorrect data or missing clubs.

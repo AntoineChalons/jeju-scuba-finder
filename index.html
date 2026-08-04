@@ -2,58 +2,187 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Jeju Dive Club Comparison Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeju Dive Club Comparator</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
 <style>
-body{font-family:system-ui,Arial,sans-serif;background:#0b1e2d;color:#eaf3f7;margin:0;padding:20px}
-h1{color:#4fd1c5;font-size:22px}
-table{border-collapse:collapse;width:100%;margin-top:16px;font-size:13px}
-th,td{border:1px solid #234;padding:8px 10px;text-align:left}
-th{background:#123a4d;cursor:pointer;position:sticky;top:0;user-select:none}
-th:hover{background:#175373}
-tr:nth-child(even){background:#0f2937}
-tr:hover{background:#1b4b63}
-.badge-true{color:#4fd1c5;font-weight:bold}
-.badge-false{color:#e05c5c}
-.arrow{font-size:11px;margin-left:4px;opacity:.7}
-a{color:#7fd8f5}
-#status{margin-bottom:10px;color:#9fb}
+:root{
+  --bg:#0b1e2d;
+  --surface:#0f2937;
+  --surface-2:#123a4d;
+  --border:#234;
+  --text:#eaf3f7;
+  --text-muted:#9db6c2;
+  --accent:#4fd1c5;
+  --accent-hover:#38b2a4;
+  --danger:#e05c5c;
+}
+*{box-sizing:border-box;}
+body{
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  margin:0;
+  padding:20px;
+}
+h1{color:var(--accent);font-size:22px;margin-bottom:4px;}
+.subtitle{color:var(--text-muted);font-size:13px;margin-bottom:16px;}
+#status{margin-bottom:12px;color:#9fb;font-size:13px;}
+.layout{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap:16px;
+}
+@media (min-width: 900px){
+  .layout{grid-template-columns: 1.4fr 1fr;}
+}
+#map{
+  width:100%;
+  height:420px;
+  border-radius:8px;
+  border:1px solid var(--border);
+}
+.table-wrap{
+  overflow-x:auto;
+  border:1px solid var(--border);
+  border-radius:8px;
+}
+table{border-collapse:collapse;width:100%;font-size:13px;}
+th,td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left;white-space:nowrap;}
+th{background:var(--surface-2);cursor:pointer;user-select:none;position:sticky;top:0;}
+th:hover{background:#175373;}
+tr:nth-child(even){background:var(--surface);}
+tr:hover{background:#1b4b63;cursor:pointer;}
+tr.selected-row{background:#204a5c !important;}
+.badge-true{color:var(--accent);font-weight:600;}
+.badge-false{color:var(--danger);}
+.arrow{font-size:11px;margin-left:4px;opacity:.7;}
+a{color:#7fd8f5;}
+.footer-links{
+  margin-top:16px;
+  font-size:13px;
+  color:var(--text-muted);
+}
+.footer-links a{
+  color:var(--accent);
+  text-decoration:none;
+  border-bottom:1px solid transparent;
+}
+.footer-links a:hover{
+  border-bottom-color:var(--accent);
+}
+.leaflet-popup-content-wrapper{
+  background:#0f2937;
+  color:var(--text);
+}
+.leaflet-popup-tip{background:#0f2937;}
+.popup-title{font-weight:700;color:var(--accent);margin-bottom:4px;}
+.popup-row{font-size:12px;color:var(--text-muted);margin:2px 0;}
 </style>
 </head>
 <body>
-<h1>Jeju Dive Club Comparison Dashboard</h1>
+<h1>Jeju Dive Club Comparator</h1>
+<div class="subtitle">Compare scuba diving clubs on Jeju Island. Click a column header to sort, click a row to highlight it on the map.</div>
 <div id="status">Loading database...</div>
-<table id="clubTable">
-<thead>
-<tr>
-<th data-key="name">Name</th>
-<th data-key="city">City</th>
-<th data-key="size">Size</th>
-<th data-key="num_instructors">Instructors</th>
-<th data-key="years_of_existence">Years</th>
-<th data-key="languages_spoken">Languages</th>
-<th data-key="certifications">Certs</th>
-<th data-key="owns_boat">Boat</th>
-<th data-key="tec_diving">Tec</th>
-<th data-key="freediving">Free</th>
-<th data-key="estimated_price_per_dive_krw">Price/dive (KRW)</th>
-<th data-key="avg_rating">Avg rating</th>
-<th data-key="website_url">Website</th>
-<th data-key="naver_map_url">Naver Map</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
+
+<div class="layout">
+  <div id="map"></div>
+  <div class="table-wrap">
+    <table id="clubTable">
+      <thead>
+      <tr>
+        <th data-key="name">Name</th>
+        <th data-key="city">City</th>
+        <th data-key="size">Size</th>
+        <th data-key="num_instructors">Instructors</th>
+        <th data-key="years_of_existence">Years</th>
+        <th data-key="languages_spoken">Languages</th>
+        <th data-key="certifications">Certs</th>
+        <th data-key="owns_boat">Boat</th>
+        <th data-key="tec_diving">Tec</th>
+        <th data-key="freediving">Free</th>
+        <th data-key="estimated_price_per_dive_krw">Price/dive (KRW)</th>
+        <th data-key="avg_rating">Avg rating</th>
+        <th data-key="website_url">Website</th>
+        <th data-key="naver_map_url">Naver Map</th>
+      </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer-links">
+  Spotted an error or missing club? <a href="https://github.com/YOUR_USERNAME/jeju-dive-club-comparator/issues/new" target="_blank" rel="noopener noreferrer">Suggest edits on GitHub</a>
+</div>
 
 <script>
 let clubs = [];
 let sortKey = 'name';
 let sortAsc = true;
+let selectedClubId = null;
+let map, markersLayer;
+const markerRefs = {};
 
 function boolBadge(v){
   if(v===1||v===true) return '<span class="badge-true">Yes</span>';
   if(v===0||v===false) return '<span class="badge-false">No</span>';
   return '-';
+}
+
+function initMap(){
+  map = L.map('map', { scrollWheelZoom: true }).setView([33.35, 126.55], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+}
+
+function popupHtml(c){
+  return `
+    <div class="popup-title">${c.name}</div>
+    <div class="popup-row">${c.city}${c.full_address ? ' — ' + c.full_address : ''}</div>
+    <div class="popup-row">Certs: ${c.certifications || '-'}</div>
+    <div class="popup-row">Languages: ${c.languages_spoken || '-'}</div>
+    <div class="popup-row">Price/dive: ${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() + ' KRW' : '-'}</div>
+    ${c.website_url ? `<div class="popup-row"><a href="${c.website_url}" target="_blank" rel="noopener noreferrer">Website</a></div>` : ''}
+  `;
+}
+
+function renderMap(list){
+  markersLayer.clearLayers();
+  Object.keys(markerRefs).forEach(k => delete markerRefs[k]);
+  const bounds = [];
+  for(const c of list){
+    if(c.gps_lat == null || c.gps_lng == null) continue;
+    const marker = L.circleMarker([c.gps_lat, c.gps_lng], {
+      radius: c.club_id === selectedClubId ? 11 : 7,
+      color: c.club_id === selectedClubId ? '#4fd1c5' : '#7fd8f5',
+      fillColor: c.club_id === selectedClubId ? '#4fd1c5' : '#1b4b63',
+      fillOpacity: 0.9,
+      weight: 2
+    }).bindPopup(popupHtml(c));
+    marker.on('click', () => selectClub(c.club_id));
+    marker.addTo(markersLayer);
+    markerRefs[c.club_id] = marker;
+    bounds.push([c.gps_lat, c.gps_lng]);
+  }
+  if(bounds.length){
+    map.fitBounds(bounds, { padding: [40,40], maxZoom: 13 });
+  }
+}
+
+function selectClub(clubId){
+  selectedClubId = (selectedClubId === clubId) ? null : clubId;
+  render();
+  const marker = markerRefs[selectedClubId];
+  if(marker){
+    map.panTo(marker.getLatLng());
+    marker.openPopup();
+  }
 }
 
 function render(){
@@ -71,6 +200,7 @@ function render(){
   });
   for(const c of sorted){
     const tr = document.createElement('tr');
+    if(c.club_id === selectedClubId) tr.classList.add('selected-row');
     tr.innerHTML = `
       <td>${c.name}</td>
       <td>${c.city}</td>
@@ -84,9 +214,13 @@ function render(){
       <td>${boolBadge(c.freediving)}</td>
       <td>${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() : '-'}</td>
       <td>${c.avg_rating ?? '-'}</td>
-      <td>${c.website_url ? `<a href="${c.website_url}" target="_blank">link</a>` : '-'}</td>
-      <td>${c.naver_map_url ? `<a href="${c.naver_map_url}" target="_blank">map</a>` : '-'}</td>
+      <td>${c.website_url ? `<a href="${c.website_url}" target="_blank" rel="noopener noreferrer">link</a>` : '-'}</td>
+      <td>${c.naver_map_url ? `<a href="${c.naver_map_url}" target="_blank" rel="noopener noreferrer">map</a>` : '-'}</td>
     `;
+    tr.addEventListener('click', (e) => {
+      if(e.target.tagName === 'A') return;
+      selectClub(c.club_id);
+    });
     tbody.appendChild(tr);
   }
   document.querySelectorAll('th').forEach(th=>{
@@ -95,6 +229,7 @@ function render(){
       th.innerHTML += `<span class="arrow">${sortAsc?'▲':'▼'}</span>`;
     }
   });
+  renderMap(sorted);
 }
 
 document.querySelectorAll('th').forEach(th=>{
@@ -106,6 +241,7 @@ document.querySelectorAll('th').forEach(th=>{
 });
 
 async function loadDb(){
+  initMap();
   const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
   const resp = await fetch('dive_clubs.db');
   const buf = await resp.arrayBuffer();
