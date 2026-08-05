@@ -5,6 +5,7 @@ A static, browser-based dashboard for comparing Jeju scuba diving clubs from a n
 ## Features
 
 - Sortable comparison table for Jeju dive clubs.
+- Filter bar for certification, size, language, and max price per dive.
 - SQLite-backed data model with normalized tables for clubs, contacts, languages, certifications, and feedback.
 - Client-side dashboard that runs entirely in the browser.
 - GitHub Pages compatible deployment with no backend required.
@@ -20,6 +21,9 @@ repo-root/
 ├── vite.config.js
 ├── src/                 # Application source (bundled by Vite)
 │   ├── main.js
+│   ├── state.js          # Centralized state container (single store + subscribe)
+│   ├── filters.js         # Pure filter-option derivation and filter-apply logic
+│   ├── filter-bar.js       # Filter bar DOM rendering and event wiring
 │   ├── db-loader.js
 │   ├── db-diagnostics.js
 │   ├── map-controller.js
@@ -42,6 +46,24 @@ repo-root/
 - SQLite for the source data store.
 - sql.js for browser-side SQLite querying, loaded via its WebAssembly build.
 - GitHub Pages for static hosting.
+
+## State Management
+
+The app uses a small, explicit state container instead of scattered module-level globals (`src/state.js`):
+
+- A single `state` object holds `clubs`, `sortKey`, `sortAsc`, `selectedClubId`, and `filters`.
+- `setState(patch)` merges a partial update and notifies every subscriber; `setFilter(key, value)` is a convenience wrapper for updating one filter field immutably.
+- `subscribe(fn)` registers a callback invoked after every state change. `main.js` registers exactly one subscriber — a `render(state)` function — so the table, map, and filter bar always stay in sync and re-render in a single, predictable pass instead of being manually called in the right order after each event handler.
+
+This keeps new features (the filter bar, and future additions like a detail drawer or URL-synced state) additive: they read from `getState()` and write via `setState()`/`setFilter()` without threading extra parameters through every render call.
+
+## Filtering
+
+The filter bar (certification, size, language, max price per dive) is built from three small, focused modules:
+
+- `src/filters.js` — pure functions with no DOM access: `buildFilterOptions(clubs)` derives the distinct dropdown values from the loaded dataset, and `applyFilters(clubs, filters)` returns the subset matching all active filters (AND logic across fields). Certification and language are comma-joined text fields in the database, so filtering matches against the split list rather than doing a substring match.
+- `src/filter-bar.js` — renders the `<select>`/`<input>` options, keeps the controls in sync with state, and wires user interaction to a single `onChange(key, value)` callback. It has no dependency on the state store itself, so it stays easy to reuse or test in isolation.
+- `main.js` wires it together: filter changes call `setFilter()`, the state subscriber recomputes `applyFilters()` then `sortClubs()` on every change, and the result feeds both the table and the map. A club missing `estimated_price_per_dive_krw` is excluded once a max-price filter is active, since it can't be confirmed to satisfy the constraint.
 
 ## Data Model
 
@@ -139,12 +161,12 @@ Because `vite.config.js` sets `base: './'`, the built assets use relative paths 
 
 ## Roadmap
 
-- Add filters for certification, size, language support, and price range.
+- ~~Add filters for certification, size, language support, and price range.~~ Done — see [Filtering](#filtering).
+- ~~Introduce a central state container as filters/drawer land.~~ Done — see [State Management](#state-management).
 - Add map links and address grouping by city or area.
 - Add a club detail drawer with feedback summaries.
 - Add import/export tooling for CSV and SQLite regeneration.
 - Add automated data validation for required fields.
-- Introduce a central state container as filters/drawer land.
 - Switch to `sql.js-httpvfs` with chunked loading once the database grows.
 - Add TypeScript or JSDoc types, ESLint, and Vitest-based tests.
 
@@ -180,3 +202,11 @@ The dashboard includes a Leaflet map that displays clubs with known GPS coordina
 - Clicking a map marker highlights the corresponding row in the table.
 
 A **Suggest edits** link is included in the interface and points to the repository issue tracker so users can report incorrect data or missing clubs.
+
+## Filter Bar Behavior
+
+- Filters combine with AND logic: selecting a certification and a max price shows only clubs matching both.
+- Certification and language filters match against individual values in the comma-joined `certifications`/`languages_spoken` fields, not a substring of the raw text.
+- Clubs with no recorded price are excluded once a max-price filter is set, since their eligibility can't be confirmed.
+- The summary line ("Showing X of Y clubs") and the table/map both update together, since they're driven by the same filtered-and-sorted list computed from state on every change.
+- "Reset filters" clears all four filters at once and is disabled whenever the filter bar is already at its default state.

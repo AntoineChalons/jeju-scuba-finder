@@ -3,43 +3,63 @@ import { loadClubsFromDb } from './db-loader.js';
 import { buildDbStatusReport } from './db-diagnostics.js';
 import { initMap, renderMap, focusMarker } from './map-controller.js';
 import { sortClubs, renderTable, updateSortArrows, bindSortHandlers } from './table-controller.js';
+import { getState, setState, setFilter, subscribe } from './state.js';
+import { buildFilterOptions, applyFilters } from './filters.js';
+import { renderFilterOptions, syncFilterControls, updateFilterSummary, bindFilterHandlers } from './filter-bar.js';
 
-let clubs = [];
-let sortKey = 'name';
-let sortAsc = true;
-let selectedClubId = null;
-
-function render() {
-  const sorted = sortClubs(clubs, sortKey, sortAsc);
-  renderTable(sorted, selectedClubId, selectClub);
-  updateSortArrows(sortKey, sortAsc);
-  renderMap(sorted, selectedClubId, selectClub);
-}
+const DEFAULT_FILTERS = { certification: 'all', size: 'all', language: 'all', maxPrice: null };
 
 function selectClub(clubId) {
-  selectedClubId = (selectedClubId === clubId) ? null : clubId;
-  render();
-  if (selectedClubId != null) focusMarker(selectedClubId);
+  const { selectedClubId } = getState();
+  setState({ selectedClubId: selectedClubId === clubId ? null : clubId });
+  const next = getState().selectedClubId;
+  if (next != null) focusMarker(next);
 }
 
 function onSortChange(key) {
-  if (sortKey === key) {
-    sortAsc = !sortAsc;
-  } else {
-    sortKey = key;
-    sortAsc = true;
-  }
-  render();
+  const { sortKey, sortAsc } = getState();
+  setState(sortKey === key
+    ? { sortAsc: !sortAsc }
+    : { sortKey: key, sortAsc: true });
+}
+
+function onFilterChange(key, value) {
+  setFilter(key, value);
+}
+
+function onFilterReset() {
+  setState({ filters: { ...DEFAULT_FILTERS } });
+}
+
+/**
+ * Single render pipeline: derive the filtered + sorted list from state,
+ * then let every view react. Every state mutation funnels through here via
+ * the subscribe() callback below, so views never fall out of sync with
+ * each other or with the filters.
+ */
+function render(state) {
+  const filtered = applyFilters(state.clubs, state.filters);
+  const sorted = sortClubs(filtered, state.sortKey, state.sortAsc);
+
+  renderTable(sorted, state.selectedClubId, selectClub);
+  updateSortArrows(state.sortKey, state.sortAsc);
+  renderMap(sorted, state.selectedClubId, selectClub);
+
+  syncFilterControls(state.filters);
+  updateFilterSummary(filtered.length, state.clubs.length);
 }
 
 async function init() {
   initMap();
   bindSortHandlers(onSortChange);
+  bindFilterHandlers(onFilterChange, onFilterReset);
+  subscribe(render);
 
   try {
-    clubs = await loadClubsFromDb(`${import.meta.env.BASE_URL}dive_clubs.db`);
+    const clubs = await loadClubsFromDb(`${import.meta.env.BASE_URL}dive_clubs.db`);
     document.getElementById('status').innerHTML = buildDbStatusReport(clubs);
-    render();
+    renderFilterOptions(buildFilterOptions(clubs));
+    setState({ clubs });
   } catch (err) {
     document.getElementById('status').textContent = 'Error loading database: ' + err;
     console.error(err);
