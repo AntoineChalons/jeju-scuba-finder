@@ -189,7 +189,8 @@ Because `vite.config.js` sets `base: './'`, the built assets use relative paths 
 - Add a club detail drawer with feedback summaries.
 - Add import/export tooling for CSV and SQLite regeneration.
 - Add automated data validation for required fields.
-- Switch to `sql.js-httpvfs` with chunked loading once the database grows.
+- ~~Switch to `sql.js-httpvfs` with chunked loading once the database grows.~~ **Cancelled** — expected scale is at most ~80 clubs, keeping `dive_clubs.db` in the tens/low hundreds of KB (currently 68 KB for 4 clubs), well under the 660 KB sql.js WASM binary already shipped. Chunked HTTP-range loading solves multi-hundred-MB files; at this size it would add real complexity (custom VFS, worker coordination, cache-control tuning) for no measurable benefit. Revisit only if the schema changes to store large blobs (e.g. inline photos) or club count grows by an order of magnitude.
+- ~~Add rendering optimizations (virtualized rows, memoized diffing).~~ **Cancelled** — these solve jank at hundreds/thousands of rendered rows; a full table rebuild on every state change is imperceptible at the ~50-80 row ceiling expected here. Revisit only if row count grows well past that range.
 - Add TypeScript or JSDoc types, ESLint, and Vitest-based tests.
 
 ## Contributing
