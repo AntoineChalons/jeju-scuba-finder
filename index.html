@@ -4,7 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jeju Dive Club Comparator</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"
+  integrity="sha384-8D3Rsfo535FqoC1pHCCQMrNf75UgzyoG/HQm9zOzITRrz3QKzecc2E7JXKGCXoWu"
+  crossorigin="anonymous"
+></script>
 <script type="module" src="assets/scripts/main.js"></script>
 <style>
 :root{
@@ -116,151 +131,5 @@ a{color:#7fd8f5;}
 <div class="footer-links">
   Spotted an error or missing club? <a href="https://github.com/antoinechalons/jeju-scuba-finder/issues/new" target="_blank" rel="noopener noreferrer">Suggest edits on GitHub</a>
 </div>
-
-<script>
-let clubs = [];
-let sortKey = 'name';
-let sortAsc = true;
-let selectedClubId = null;
-let map, markersLayer;
-const markerRefs = {};
-
-function boolBadge(v){
-  if(v===1||v===true) return '<span class="badge-true">Yes</span>';
-  if(v===0||v===false) return '<span class="badge-false">No</span>';
-  return '-';
-}
-
-function initMap(){
-  map = L.map('map', { scrollWheelZoom: true }).setView([33.35, 126.55], 10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-  markersLayer = L.layerGroup().addTo(map);
-}
-
-function popupHtml(c){
-  return `
-    <div class="popup-title">${c.name}</div>
-    <div class="popup-row">${c.city}${c.full_address ? ' — ' + c.full_address : ''}</div>
-    <div class="popup-row">Certs: ${c.certifications || '-'}</div>
-    <div class="popup-row">Languages: ${c.languages_spoken || '-'}</div>
-    <div class="popup-row">Price/dive: ${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() + ' KRW' : '-'}</div>
-    ${c.website_url ? `<div class="popup-row"><a href="${c.website_url}" target="_blank" rel="noopener noreferrer">Website</a></div>` : ''}
-  `;
-}
-
-function renderMap(list){
-  markersLayer.clearLayers();
-  Object.keys(markerRefs).forEach(k => delete markerRefs[k]);
-  const bounds = [];
-  for(const c of list){
-    if(c.gps_lat == null || c.gps_lng == null) continue;
-    const marker = L.circleMarker([c.gps_lat, c.gps_lng], {
-      radius: c.club_id === selectedClubId ? 11 : 7,
-      color: c.club_id === selectedClubId ? '#4fd1c5' : '#7fd8f5',
-      fillColor: c.club_id === selectedClubId ? '#4fd1c5' : '#1b4b63',
-      fillOpacity: 0.9,
-      weight: 2
-    }).bindPopup(popupHtml(c));
-    marker.on('click', () => selectClub(c.club_id));
-    marker.addTo(markersLayer);
-    markerRefs[c.club_id] = marker;
-    bounds.push([c.gps_lat, c.gps_lng]);
-  }
-  if(bounds.length){
-    map.fitBounds(bounds, { padding: [40,40], maxZoom: 13 });
-  }
-}
-
-function selectClub(clubId){
-  selectedClubId = (selectedClubId === clubId) ? null : clubId;
-  render();
-  const marker = markerRefs[selectedClubId];
-  if(marker){
-    map.panTo(marker.getLatLng());
-    marker.openPopup();
-  }
-}
-
-function render(){
-  const tbody = document.querySelector('#clubTable tbody');
-  tbody.innerHTML = '';
-  const sorted = [...clubs].sort((a,b)=>{
-    let av=a[sortKey], bv=b[sortKey];
-    if(av==null) av = typeof bv==='number' ? -Infinity : '';
-    if(bv==null) bv = typeof av==='number' ? -Infinity : '';
-    if(typeof av==='string') av=av.toLowerCase();
-    if(typeof bv==='string') bv=bv.toLowerCase();
-    if(av<bv) return sortAsc?-1:1;
-    if(av>bv) return sortAsc?1:-1;
-    return 0;
-  });
-  for(const c of sorted){
-    const tr = document.createElement('tr');
-    if(c.club_id === selectedClubId) tr.classList.add('selected-row');
-    tr.innerHTML = `
-      <td>${c.name}</td>
-      <td>${c.city}</td>
-      <td>${c.size||'-'}</td>
-      <td>${c.num_instructors ?? '-'}</td>
-      <td>${c.years_of_existence ?? '-'}</td>
-      <td>${c.languages_spoken||'-'}</td>
-      <td>${c.certifications||'-'}</td>
-      <td>${boolBadge(c.owns_boat)}</td>
-      <td>${boolBadge(c.tec_diving)}</td>
-      <td>${boolBadge(c.freediving)}</td>
-      <td>${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() : '-'}</td>
-      <td>${c.avg_rating ?? '-'}</td>
-      <td>${c.website_url ? `<a href="${c.website_url}" target="_blank" rel="noopener noreferrer">link</a>` : '-'}</td>
-      <td>${c.naver_map_url ? `<a href="${c.naver_map_url}" target="_blank" rel="noopener noreferrer">map</a>` : '-'}</td>
-    `;
-    tr.addEventListener('click', (e) => {
-      if(e.target.tagName === 'A') return;
-      selectClub(c.club_id);
-    });
-    tbody.appendChild(tr);
-  }
-  document.querySelectorAll('th').forEach(th=>{
-    th.innerHTML = th.textContent.replace(/\s*[▲▼]$/,'');
-    if(th.dataset.key===sortKey){
-      th.innerHTML += `<span class="arrow">${sortAsc?'▲':'▼'}</span>`;
-    }
-  });
-  renderMap(sorted);
-}
-
-document.querySelectorAll('th').forEach(th=>{
-  th.addEventListener('click', ()=>{
-    const key = th.dataset.key;
-    if(sortKey===key){ sortAsc = !sortAsc; } else { sortKey = key; sortAsc = true; }
-    render();
-  });
-});
-
-async function loadDb(){
-  initMap();
-  const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
-  const resp = await fetch('dive_clubs.db');
-  const buf = await resp.arrayBuffer();
-  const db = new SQL.Database(new Uint8Array(buf));
-  const res = db.exec('SELECT * FROM v_club_dashboard');
-  if(res.length){
-    const cols = res[0].columns;
-    clubs = res[0].values.map(row=>{
-      const obj = {};
-      cols.forEach((c,i)=>obj[c]=row[i]);
-      return obj;
-    });
-  }
-  document.getElementById('status').innerHTML = buildDbStatusReport(clubs);
-  render();
-}
-loadDb().catch(err=>{
-  document.getElementById('status').textContent = 'Error loading database: '+err;
-  console.error(err);
-});
-</script>
 </body>
 </html>
