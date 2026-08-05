@@ -1,6 +1,9 @@
+import initSqlJs from 'sql.js';
+import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
+
 export async function loadClubsFromDb(dbPath = 'dive_clubs.db') {
   const SQL = await initSqlJs({
-    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
+    locateFile: () => sqlWasmUrl
   });
   const resp = await fetch(dbPath);
   const buf = await resp.arrayBuffer();

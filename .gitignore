@@ -1,3 +1,9 @@
+### Node / Vite
+node_modules/
+dist/
+*.local
+npm-debug.log*
+
 ### macOS
 # Finder metadata
 .DS_Store
@@ -6,7 +12,8 @@
 ._*
 
 # Custom folder icons
-Icon
+Icon
+
 
 # Volume root files
 .DocumentRevisions-V100

@@ -15,17 +15,32 @@ A static, browser-based dashboard for comparing Jeju scuba diving clubs from a n
 
 ```text
 repo-root/
-├── index.html
-├── dive_clubs.db
+├── index.html          # Vite entry HTML
+├── package.json
+├── vite.config.js
+├── src/                 # Application source (bundled by Vite)
+│   ├── main.js
+│   ├── db-loader.js
+│   ├── db-diagnostics.js
+│   ├── map-controller.js
+│   ├── table-controller.js
+│   └── utils.js
+├── public/              # Static assets copied as-is to dist/
+│   └── dive_clubs.db
+├── tools/               # Python data-pipeline scripts (build/scrape/validate)
+│   ├── build_db.py
+│   ├── scrape_clubs.py
+│   └── validate_schema.py
 ├── README.md
 └── .gitignore
 ```
 
 ## Technology Stack
 
-- HTML, CSS, and JavaScript.
+- HTML, CSS, and JavaScript, bundled with [Vite](https://vitejs.dev/).
+- npm-managed dependencies: `leaflet` and `sql.js` (no CDN `<script>` tags).
 - SQLite for the source data store.
-- sql.js for browser-side SQLite querying.
+- sql.js for browser-side SQLite querying, loaded via its WebAssembly build.
 - GitHub Pages for static hosting.
 
 ## Data Model
@@ -43,48 +58,70 @@ The database uses a normalized schema so the project can grow without becoming a
 
 ### Prerequisites
 
+- Node.js 18+ and npm.
 - A modern browser.
-- A local static file server.
 
-### Run locally
-
-Do not open `index.html` directly with `file://` because browser fetch behavior can block access to the SQLite file. Serve the directory with a local web server instead:
+### Setup
 
 ```bash
-python3 -m http.server 8000
+npm install
 ```
 
-Then open:
+### Run the dev server
 
-```text
-http://localhost:8000
+```bash
+npm run dev
 ```
 
-If you prefer Node.js tooling, any static server works as long as it serves `index.html` and `dive_clubs.db` from the same directory.
+Vite prints a local URL (typically `http://localhost:5173`). Open it in a browser — hot module reload is enabled, so edits to files in `src/` refresh automatically.
+
+Do not open `index.html` directly with `file://`; browser fetch behavior blocks access to the SQLite file. Always go through the Vite dev server or a build preview.
+
+### Build for production
+
+```bash
+npm run build
+```
+
+This bundles `src/` into `dist/`, copies everything in `public/` (including `dive_clubs.db`) alongside it, and hashes asset filenames for cache-busting.
+
+### Preview the production build locally
+
+```bash
+npm run preview
+```
 
 ## How It Works
 
-The frontend loads `dive_clubs.db` in the browser, opens it with sql.js, and queries the `v_club_dashboard` view. The resulting rows are rendered into a sortable HTML table, so the dashboard works without a backend API or build pipeline.
+The frontend fetches `dive_clubs.db` (served from `public/` at build time) in the browser, opens it with sql.js's WebAssembly build, and queries the `v_club_dashboard` view. The resulting rows are rendered into a sortable HTML table, so the dashboard works without a backend API.
 
-The current implementation is read-only. Updates happen by editing the SQLite database locally, regenerating the `.db` file if needed, and committing it back to the repository.
+The current implementation is read-only. Updates happen by editing the SQLite database locally (or via the scripts in `tools/`), regenerating the `.db` file, dropping it into `public/dive_clubs.db`, and committing it back to the repository.
 
 ## Deployment to GitHub Pages
 
-1. Push `index.html` and `dive_clubs.db` to the repository.
-2. In GitHub, open **Settings → Pages**.
-3. Under **Build and deployment**, choose **Deploy from a branch**.
-4. Select branch `main` and folder `/ (root)`.
-5. Save the settings and wait for GitHub Pages to publish the site.
+This project now uses a build step, so GitHub Pages must serve the built `dist/` output rather than the repository root.
 
-Because the app uses relative paths, it will work correctly from a GitHub Pages project URL as long as the HTML and SQLite file remain in the published folder.
+**Recommended: GitHub Actions (build + deploy on every push)**
+
+1. In GitHub, open **Settings → Pages**.
+2. Under **Build and deployment**, choose **GitHub Actions**.
+3. Add a workflow that runs `npm ci`, `npm run build`, and publishes `dist/` using `actions/upload-pages-artifact` + `actions/deploy-pages`.
+4. Push to `main` — GitHub Pages rebuilds and redeploys automatically.
+
+**Alternative: manual `dist/` deploy**
+
+1. Run `npm run build` locally.
+2. Publish the contents of `dist/` to a `gh-pages` branch (e.g. with the `gh-pages` npm package) or configure Pages to deploy from that branch/folder.
+
+Because `vite.config.js` sets `base: './'`, the built assets use relative paths and work correctly from a GitHub Pages project URL subpath.
 
 ## Adding or Updating Clubs
 
-1. Edit the SQLite source data locally.
+1. Edit the SQLite source data locally (see `tools/build_db.py`, `tools/scrape_clubs.py`, `tools/validate_schema.py`).
 2. Keep the schema normalized; avoid adding new columns for every new contact or certification type.
-3. Rebuild or replace `dive_clubs.db`.
+3. Rebuild or replace the database, then copy it to `public/dive_clubs.db`.
 4. Commit the updated database and push to GitHub.
-5. GitHub Pages redeploys automatically.
+5. GitHub Pages redeploys automatically via the Actions workflow.
 
 ## Recommended SQLite Constraints
 
@@ -98,7 +135,7 @@ Because the app uses relative paths, it will work correctly from a GitHub Pages 
 - Some clubs may have incomplete public data.
 - Feedback data is only as good as the latest manual or scripted update.
 - The dashboard is static and read-only in the browser.
-- Large SQLite databases may need a chunked loading approach such as `sql.js-httpvfs`.
+- Large SQLite databases may need a chunked loading approach such as `sql.js-httpvfs` — currently the whole `.db` file is fetched into memory on load.
 
 ## Roadmap
 
@@ -107,6 +144,9 @@ Because the app uses relative paths, it will work correctly from a GitHub Pages 
 - Add a club detail drawer with feedback summaries.
 - Add import/export tooling for CSV and SQLite regeneration.
 - Add automated data validation for required fields.
+- Introduce a central state container as filters/drawer land.
+- Switch to `sql.js-httpvfs` with chunked loading once the database grows.
+- Add TypeScript or JSDoc types, ESLint, and Vitest-based tests.
 
 ## Contributing
 

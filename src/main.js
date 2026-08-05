@@ -1,3 +1,4 @@
+import 'leaflet/dist/leaflet.css';
 import { loadClubsFromDb } from './db-loader.js';
 import { buildDbStatusReport } from './db-diagnostics.js';
 import { initMap, renderMap, focusMarker } from './map-controller.js';
@@ -36,7 +37,7 @@ async function init() {
   bindSortHandlers(onSortChange);
 
   try {
-    clubs = await loadClubsFromDb('dive_clubs.db');
+    clubs = await loadClubsFromDb(`${import.meta.env.BASE_URL}dive_clubs.db`);
     document.getElementById('status').innerHTML = buildDbStatusReport(clubs);
     render();
   } catch (err) {

@@ -1,3 +1,5 @@
+import L from 'leaflet';
+
 let map, markersLayer;
 const markerRefs = {};
 
