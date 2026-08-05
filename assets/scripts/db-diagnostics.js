@@ -1,5 +1,4 @@
-// db-diagnostics.js
-function buildDbStatusReport(clubs) {
+export function buildDbStatusReport(clubs) {
   const totalCount = clubs.length;
   const mappable = clubs.filter(c => c.gps_lat != null && c.gps_lng != null);
   const unmappable = clubs.filter(c => c.gps_lat == null || c.gps_lng == null);
