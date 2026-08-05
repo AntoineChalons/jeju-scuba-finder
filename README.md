@@ -1,4 +1,4 @@
-# Jeju Dive Club Comparator
+# Jeju Scuba-diving Club Finder
 
 A static, browser-based dashboard for comparing Jeju scuba diving clubs from a normalized SQLite database. The app is designed to help users compare operators such as MJ, Nautilus, Sealife, and BigBlue33 by contact methods, certifications, language support, boat access, pricing, and feedback sources.
 
