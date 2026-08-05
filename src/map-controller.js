@@ -1,4 +1,5 @@
 import L from 'leaflet';
+import { t } from './i18n/i18n.js';
 
 let map, markersLayer;
 const markerRefs = {};
@@ -13,13 +14,14 @@ export function initMap() {
 }
 
 function popupHtml(c) {
+  const empty = t('popup.emptyValue');
   return `
     <div class="popup-title">${c.name}</div>
     <div class="popup-row">${c.city}${c.full_address ? ' — ' + c.full_address : ''}</div>
-    <div class="popup-row">Certs: ${c.certifications || '-'}</div>
-    <div class="popup-row">Languages: ${c.languages_spoken || '-'}</div>
-    <div class="popup-row">Price/dive: ${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() + ' KRW' : '-'}</div>
-    ${c.website_url ? `<div class="popup-row"><a href="${c.website_url}" target="_blank" rel="noopener noreferrer">Website</a></div>` : ''}
+    <div class="popup-row">${t('popup.certs')}: ${c.certifications || empty}</div>
+    <div class="popup-row">${t('popup.languages')}: ${c.languages_spoken || empty}</div>
+    <div class="popup-row">${t('popup.price')}: ${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() + ' KRW' : empty}</div>
+    ${c.website_url ? `<div class="popup-row"><a href="${c.website_url}" target="_blank" rel="noopener noreferrer">${t('popup.website')}</a></div>` : ''}
   `;
 }
 

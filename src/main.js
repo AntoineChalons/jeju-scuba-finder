@@ -2,10 +2,12 @@ import 'leaflet/dist/leaflet.css';
 import { loadClubsFromDb } from './db-loader.js';
 import { buildDbStatusReport } from './db-diagnostics.js';
 import { initMap, renderMap, focusMarker } from './map-controller.js';
-import { sortClubs, renderTable, updateSortArrows, bindSortHandlers } from './table-controller.js';
+import { sortClubs, renderTable, renderTableHeaders, updateSortArrows, bindSortHandlers } from './table-controller.js';
 import { getState, setState, setFilter, subscribe } from './state.js';
 import { buildFilterOptions, applyFilters } from './filters.js';
-import { renderFilterOptions, syncFilterControls, updateFilterSummary, bindFilterHandlers } from './filter-bar.js';
+import { renderFilterLabels, renderFilterOptions, syncFilterControls, updateFilterSummary, bindFilterHandlers } from './filter-bar.js';
+import { getInitialLocale, setLocale, t } from './i18n/i18n.js';
+import { renderLanguageSwitcher, bindLanguageSwitcher } from './i18n/language-switcher.js';
 
 const DEFAULT_FILTERS = { certification: 'all', size: 'all', language: 'all', maxPrice: null };
 
@@ -31,11 +33,45 @@ function onFilterReset() {
   setState({ filters: { ...DEFAULT_FILTERS } });
 }
 
+function onLocaleChange(locale) {
+  setLocale(locale);
+  setState({ locale });
+}
+
+/**
+ * Apply every static (non-data-dependent) translated string: page title,
+ * headers, filter bar labels, footer, language switcher. Called on init
+ * and whenever the locale changes.
+ */
+function renderStaticText(state) {
+  document.title = t('title');
+  document.documentElement.lang = state.locale;
+  document.getElementById('page-title').textContent = t('title');
+  document.getElementById('page-subtitle').textContent = t('subtitle');
+  document.getElementById('footer-prompt').textContent = t('footer.prompt');
+  document.getElementById('footer-link').textContent = t('footer.link');
+  const statusEl = document.getElementById('status');
+  if (state.clubs.length) {
+    statusEl.innerHTML = buildDbStatusReport(state.clubs);
+    renderFilterOptions(buildFilterOptions(state.clubs));
+    // Rebuilding the <select> options above resets the DOM selection, so
+    // restore it from state immediately (independent of the main render
+    // pipeline, which only fires on setState()).
+    syncFilterControls(state.filters);
+    updateFilterSummary(applyFilters(state.clubs, state.filters).length, state.clubs.length);
+  } else {
+    statusEl.textContent = t('loading');
+  }
+  renderTableHeaders();
+  renderFilterLabels();
+  renderLanguageSwitcher();
+}
+
 /**
  * Single render pipeline: derive the filtered + sorted list from state,
  * then let every view react. Every state mutation funnels through here via
  * the subscribe() callback below, so views never fall out of sync with
- * each other or with the filters.
+ * each other or with the filters/locale.
  */
 function render(state) {
   const filtered = applyFilters(state.clubs, state.filters);
@@ -50,6 +86,17 @@ function render(state) {
 }
 
 async function init() {
+  const locale = getInitialLocale();
+  setLocale(locale);
+  setState({ locale });
+
+  renderStaticText(getState());
+  bindLanguageSwitcher((newLocale) => {
+    onLocaleChange(newLocale);
+    renderStaticText(getState());
+    render(getState());
+  });
+
   initMap();
   bindSortHandlers(onSortChange);
   bindFilterHandlers(onFilterChange, onFilterReset);
@@ -61,7 +108,7 @@ async function init() {
     renderFilterOptions(buildFilterOptions(clubs));
     setState({ clubs });
   } catch (err) {
-    document.getElementById('status').textContent = 'Error loading database: ' + err;
+    document.getElementById('status').textContent = t('errorLoading', { error: err });
     console.error(err);
   }
 }

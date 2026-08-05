@@ -27,6 +27,64 @@ body{
 }
 h1{color:var(--accent);font-size:22px;margin-bottom:4px;}
 .subtitle{color:var(--text-muted);font-size:13px;margin-bottom:16px;}
+.page-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+}
+.page-header .titles{min-width:0;}
+#language-switcher{
+  position:relative;
+  flex-shrink:0;
+}
+#language-switcher-toggle{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:var(--surface-2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:13px;
+  cursor:pointer;
+}
+#language-switcher-toggle:hover{background:#175373;}
+#language-switcher-toggle svg{border-radius:2px;display:block;}
+#language-switcher-toggle .lang-code{white-space:nowrap;}
+#language-switcher-menu{
+  position:absolute;
+  top:calc(100% + 6px);
+  right:0;
+  margin:0;
+  padding:6px;
+  list-style:none;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+  min-width:150px;
+  z-index:1000;
+}
+#language-switcher-menu[hidden]{display:none;}
+.lang-option{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  background:transparent;
+  color:var(--text);
+  border:none;
+  border-radius:6px;
+  padding:7px 8px;
+  font-size:13px;
+  text-align:left;
+  cursor:pointer;
+}
+.lang-option:hover{background:#175373;}
+.lang-option[aria-current="true"]{background:var(--surface-2);color:var(--accent);}
+.lang-option svg{border-radius:2px;flex-shrink:0;}
 #status{margin-bottom:12px;color:#9fb;font-size:13px;}
 .layout{
   display:grid;
@@ -133,8 +191,13 @@ a{color:#7fd8f5;}
 </style>
 </head>
 <body>
-<h1>Jeju Dive Club Comparator</h1>
-<div class="subtitle">Compare scuba diving clubs on Jeju Island. Click a column header to sort, click a row to highlight it on the map.</div>
+<div class="page-header">
+  <div class="titles">
+    <h1 id="page-title">Jeju Dive Club Comparator</h1>
+    <div id="page-subtitle" class="subtitle">Compare scuba diving clubs on Jeju Island. Click a column header to sort, click a row to highlight it on the map.</div>
+  </div>
+  <div id="language-switcher"></div>
+</div>
 <div id="status">Loading database...</div>
 
 <div class="filter-bar">
@@ -186,7 +249,7 @@ a{color:#7fd8f5;}
 </div>
 
 <div class="footer-links">
-  Spotted an error or missing club? <a href="https://github.com/antoinechalons/jeju-scuba-finder/issues/new" target="_blank" rel="noopener noreferrer">Suggest edits on GitHub</a>
+  <span id="footer-prompt">Spotted an error or missing club?</span> <a id="footer-link" href="https://github.com/antoinechalons/jeju-scuba-finder/issues/new" target="_blank" rel="noopener noreferrer">Suggest edits on GitHub</a>
 </div>
 </body>
 </html>

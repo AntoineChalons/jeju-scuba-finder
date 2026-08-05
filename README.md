@@ -7,6 +7,7 @@ A static, browser-based dashboard for comparing Jeju scuba diving clubs from a n
 - Sortable comparison table for Jeju dive clubs.
 - Filter bar for certification, size, language, and max price per dive.
 - SQLite-backed data model with normalized tables for clubs, contacts, languages, certifications, and feedback.
+- Fully multi-lingual UI (English, Chinese, Japanese, Korean) with automatic browser-language detection and a persistent language switcher.
 - Client-side dashboard that runs entirely in the browser.
 - GitHub Pages compatible deployment with no backend required.
 - Read-only database access from a static `.db` file.
@@ -28,7 +29,10 @@ repo-root/
 │   ├── db-diagnostics.js
 │   ├── map-controller.js
 │   ├── table-controller.js
-│   └── utils.js
+│   └── i18n/
+│       ├── translations.js       # en/zh/ja/ko dictionaries
+│       ├── i18n.js               # detection, persistence, t() lookup
+│       └── language-switcher.js  # top-right language switcher UI
 ├── public/              # Static assets copied as-is to dist/
 │   └── dive_clubs.db
 ├── tools/               # Python data-pipeline scripts (build/scrape/validate)
@@ -57,6 +61,8 @@ The app uses a small, explicit state container instead of scattered module-level
 
 This keeps new features (the filter bar, and future additions like a detail drawer or URL-synced state) additive: they read from `getState()` and write via `setState()`/`setFilter()` without threading extra parameters through every render call.
 
+The `locale` field follows the same pattern: it lives in `state`, is set via `setState({ locale })`, and every render function reads the active language through the `t()` translation lookup rather than being passed a language parameter directly.
+
 ## Filtering
 
 The filter bar (certification, size, language, max price per dive) is built from three small, focused modules:
@@ -64,6 +70,21 @@ The filter bar (certification, size, language, max price per dive) is built from
 - `src/filters.js` — pure functions with no DOM access: `buildFilterOptions(clubs)` derives the distinct dropdown values from the loaded dataset, and `applyFilters(clubs, filters)` returns the subset matching all active filters (AND logic across fields). Certification and language are comma-joined text fields in the database, so filtering matches against the split list rather than doing a substring match.
 - `src/filter-bar.js` — renders the `<select>`/`<input>` options, keeps the controls in sync with state, and wires user interaction to a single `onChange(key, value)` callback. It has no dependency on the state store itself, so it stays easy to reuse or test in isolation.
 - `main.js` wires it together: filter changes call `setFilter()`, the state subscriber recomputes `applyFilters()` then `sortClubs()` on every change, and the result feeds both the table and the map. A club missing `estimated_price_per_dive_krw` is excluded once a max-price filter is active, since it can't be confirmed to satisfy the constraint.
+
+## Internationalization
+
+The entire UI — page title, subtitle, filter bar, table headers, Yes/No badges, link text, map popups, status/diagnostic banner, and footer — is translated into English (`en`), Chinese (`zh`), Japanese (`ja`), and Korean (`ko`).
+
+- **`src/i18n/translations.js`** — a flat dictionary per locale (`translations.en`, `translations.zh`, ...), keyed by dotted paths (e.g. `filters.reset`, `table.name`). All four dictionaries are kept structurally identical; a Node script check during development confirms no locale is missing a key before shipping.
+- **`src/i18n/i18n.js`** — the core lookup/detection module:
+  - `t(key, vars)` resolves a dotted key against the active locale, falls back to English for any missing key, and supports `{placeholder}` interpolation (e.g. `t('filters.showingFiltered', { filtered, total })`).
+  - `detectBrowserLocale()` reads `navigator.languages`/`navigator.language` and maps the first supported match (`zh-*` → `zh`, `ja-*` → `ja`, `ko-*` → `ko`, everything else → `en`) — this is the "detect where the user is from" behavior, driven by the browser/OS locale rather than IP geolocation, so it works offline and requires no extra permissions.
+  - `getInitialLocale()` checks `localStorage` for a previously saved manual choice first, and only falls back to `detectBrowserLocale()` if none is stored.
+  - `setLocale()` / `persistLocale()` save the active locale to `localStorage` (`jeju-dive-club-locale`) so a manual choice survives a page reload.
+- **`src/i18n/language-switcher.js`** — renders the language switcher: a compact button in the top-right corner showing a small inline-SVG flag plus the active language's short label, which opens a dropdown with all four languages (each with its own flag). Flags are inline SVG rather than raster images — crisp at any size, no extra network requests, no licensing concerns. Selecting an option calls back into `main.js`, which updates state and re-renders every translated string.
+- **`main.js`** wires it together: `getInitialLocale()` runs once on startup before the first render; `renderStaticText(state)` applies every locale-dependent label (title, headers, filter labels, footer, switcher) and is re-run whenever the locale changes; the regular `render(state)` pipeline (table/map/filter sync) is locale-agnostic since it only touches data already rendered by `renderStaticText`.
+
+Club **data** itself (names, cities, raw certification/language values pulled from the database) is intentionally left untranslated — only UI chrome and labels are localized.
 
 ## Data Model
 
@@ -163,6 +184,7 @@ Because `vite.config.js` sets `base: './'`, the built assets use relative paths 
 
 - ~~Add filters for certification, size, language support, and price range.~~ Done — see [Filtering](#filtering).
 - ~~Introduce a central state container as filters/drawer land.~~ Done — see [State Management](#state-management).
+- ~~Make the UI fully multi-lingual with auto-detected language.~~ Done — see [Internationalization](#internationalization).
 - Add map links and address grouping by city or area.
 - Add a club detail drawer with feedback summaries.
 - Add import/export tooling for CSV and SQLite regeneration.

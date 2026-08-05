@@ -2,6 +2,8 @@
 // full dataset; user interaction only updates the shared state store via
 // setFilter(), never touches clubs/table/map rendering directly.
 
+import { t } from './i18n/i18n.js';
+
 function optionsHtml(values, allLabel) {
   const opts = [`<option value="all">${allLabel}</option>`];
   for (const v of values) {
@@ -10,14 +12,24 @@ function optionsHtml(values, allLabel) {
   return opts.join('');
 }
 
-/** Populate the <select> elements once the club dataset has loaded. */
+/** Re-render the static filter bar labels (not the dynamic options) for the active locale. */
+export function renderFilterLabels() {
+  document.querySelector('label[for="filter-certification"]').textContent = t('filters.certification');
+  document.querySelector('label[for="filter-size"]').textContent = t('filters.size');
+  document.querySelector('label[for="filter-language"]').textContent = t('filters.language');
+  document.querySelector('label[for="filter-max-price"]').textContent = t('filters.maxPrice');
+  document.getElementById('filter-max-price').placeholder = t('filters.noLimit');
+  document.getElementById('filter-reset').textContent = t('filters.reset');
+}
+
+/** Populate the <select> elements once the club dataset has loaded (or locale changes). */
 export function renderFilterOptions(options) {
   document.getElementById('filter-certification').innerHTML =
-    optionsHtml(options.certification, 'All certifications');
+    optionsHtml(options.certification, t('filters.allCertifications'));
   document.getElementById('filter-size').innerHTML =
-    optionsHtml(options.size, 'All sizes');
+    optionsHtml(options.size, t('filters.allSizes'));
   document.getElementById('filter-language').innerHTML =
-    optionsHtml(options.language, 'All languages');
+    optionsHtml(options.language, t('filters.allLanguages'));
 }
 
 /** Reflect the current filters onto the controls (used on state changes). */
@@ -32,8 +44,8 @@ export function syncFilterControls(filters) {
 export function updateFilterSummary(filteredCount, totalCount) {
   const el = document.getElementById('filter-summary');
   el.textContent = filteredCount === totalCount
-    ? `Showing all ${totalCount} clubs`
-    : `Showing ${filteredCount} of ${totalCount} clubs`;
+    ? t('filters.showingAll', { total: totalCount })
+    : t('filters.showingFiltered', { filtered: filteredCount, total: totalCount });
 
   document.getElementById('filter-reset').disabled = filteredCount === totalCount &&
     isDefaultFilterUi();

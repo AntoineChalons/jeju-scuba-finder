@@ -11,6 +11,7 @@ const state = {
   sortKey: 'name',
   sortAsc: true,
   selectedClubId: null,
+  locale: 'en',        // active UI language; set from i18n before first render
   filters: {
     certification: 'all',   // 'all' | one certification name
     size: 'all',            // 'all' | 'small' | 'medium' | 'large'
