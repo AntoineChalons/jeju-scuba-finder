@@ -4,6 +4,10 @@ dist/
 *.local
 npm-debug.log*
 
+### Python
+__pycache__/
+*.pyc
+
 ### macOS
 # Finder metadata
 .DS_Store

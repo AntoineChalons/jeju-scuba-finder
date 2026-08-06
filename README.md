@@ -35,10 +35,14 @@ repo-root/
 │       └── language-switcher.js  # top-right language switcher UI
 ├── public/              # Static assets copied as-is to dist/
 │   └── dive_clubs.db
-├── tools/               # Python data-pipeline scripts (build/scrape/validate)
-│   ├── build_db.py
-│   ├── scrape_clubs.py
-│   └── validate_schema.py
+├── data/
+│   └── clubs.csv        # Canonical CSV source of truth for dive_clubs.db
+├── tools/               # Python CSV ↔ SQLite import/export/validation (stdlib only)
+│   ├── schema.py         # CSV column definitions and controlled-value sets
+│   ├── db.py             # SQLite schema DDL and connection helpers
+│   ├── validate.py       # Row/file validation shared by import and standalone use
+│   ├── import_csv.py     # CSV -> fresh SQLite database
+│   └── export_csv.py     # SQLite -> canonical CSV
 ├── README.md
 └── .gitignore
 ```
@@ -138,7 +142,7 @@ npm run preview
 
 The frontend fetches `dive_clubs.db` (served from `public/` at build time) in the browser, opens it with sql.js's WebAssembly build, and queries the `v_club_dashboard` view. The resulting rows are rendered into a sortable HTML table, so the dashboard works without a backend API.
 
-The current implementation is read-only. Updates happen by editing the SQLite database locally (or via the scripts in `tools/`), regenerating the `.db` file, dropping it into `public/dive_clubs.db`, and committing it back to the repository.
+The current implementation is read-only in the browser. Updates happen by editing `data/clubs.csv` and regenerating `public/dive_clubs.db` with the tooling in `tools/` (see [Data Import/Export Tooling](#data-importexport-tooling)), then committing both files back to the repository.
 
 ## Deployment to GitHub Pages
 
@@ -158,13 +162,61 @@ This project now uses a build step, so GitHub Pages must serve the built `dist/`
 
 Because `vite.config.js` sets `base: './'`, the built assets use relative paths and work correctly from a GitHub Pages project URL subpath.
 
-## Adding or Updating Clubs
+## Data Import/Export Tooling
 
-1. Edit the SQLite source data locally (see `tools/build_db.py`, `tools/scrape_clubs.py`, `tools/validate_schema.py`).
-2. Keep the schema normalized; avoid adding new columns for every new contact or certification type.
-3. Rebuild or replace the database, then copy it to `public/dive_clubs.db`.
-4. Commit the updated database and push to GitHub.
-5. GitHub Pages redeploys automatically via the Actions workflow.
+Club data is maintained as a single canonical CSV file, `data/clubs.csv`, which is the source of truth for `public/dive_clubs.db`. The database itself is never hand-edited — it's always regenerated from the CSV, so a `git diff` on `data/clubs.csv` tells you exactly what changed in plain text instead of a binary SQLite diff.
+
+### CSV schema
+
+One row = one club. Most columns map 1:1 onto the `clubs` table. A few columns pack multiple normalized child rows into a single delimited cell so the whole dataset stays a flat, spreadsheet-friendly file:
+
+| Column | Format | Example |
+| --- | --- | --- |
+| `club_id` | integer, blank for a new club | `1` or empty |
+| `name`, `city` | required text | `MJ Jeju Diving Club` |
+| `full_address`, `website_url`, `naver_map_url` | optional text | |
+| `gps_lat`, `gps_lng` | optional decimal degrees; both must be set together | `33.24451` |
+| `size` | `small` \| `medium` \| `large`, or blank | `small` |
+| `num_instructors`, `years_of_existence`, `estimated_price_per_dive_krw` | optional integer | `2` |
+| `owns_boat`, `tec_diving`, `freediving` | `yes`/`no` (also accepts `true`/`false`, `1`/`0`), or blank for unknown | `yes` |
+| `languages_spoken` | comma-joined language names | `English, Korean` |
+| `certifications` | comma-joined certification names | `PADI, NAUI` |
+| `contact_methods` | semicolon-joined `type:value` pairs; type is one of `email`, `whatsapp`, `kakaotalk`, `mobile_phone` | `email:a@b.com;mobile_phone:+82-10-1234-5678` |
+| `feedback` | semicolon-joined `source:rating:review_count:url`; only `source` is required, trailing fields may be omitted | `TripAdvisor:4.5:12:https://...` or just `Reddit` |
+
+Languages, certifications, and feedback sources don't need to be predefined — any new name in the CSV is created automatically on import.
+
+### Workflow
+
+**Editing existing clubs or adding new ones:**
+
+1. Open `data/clubs.csv` in a spreadsheet application or text editor.
+2. Edit existing rows in place (keep their `club_id`), or add a new row with `club_id` left blank.
+3. Regenerate the database:
+   ```bash
+   python3 tools/import_csv.py data/clubs.csv public/dive_clubs.db
+   ```
+   This validates every row first and prints a clear error report if anything is malformed — it will not touch the database until the whole file passes. The database is always rebuilt from scratch from the CSV, so removing a row from the CSV removes that club from the database too.
+4. Run `npm run build` (or `npm run preview`) locally to confirm the dashboard still loads correctly.
+5. Commit both `data/clubs.csv` and `public/dive_clubs.db`, then push — GitHub Pages redeploys automatically via the Actions workflow.
+
+**Exporting the current database back to CSV** (e.g. after a manual SQLite edit, or to hand the file to someone else for review):
+
+```bash
+python3 tools/export_csv.py public/dive_clubs.db data/clubs.csv
+```
+
+**Validating a CSV without writing a database:**
+
+```bash
+python3 tools/validate.py data/clubs.csv
+# or, equivalently:
+python3 tools/import_csv.py data/clubs.csv public/dive_clubs.db --dry-run
+```
+
+Both commands report every validation issue in the file (missing required fields, out-of-range GPS coordinates, invalid `size`/boolean values, malformed `contact_methods`/`feedback` entries, duplicate `club_id`s, and duplicate name+city pairs) rather than stopping at the first one.
+
+The tooling in `tools/` (`schema.py`, `db.py`, `validate.py`, `import_csv.py`, `export_csv.py`) has no dependencies beyond the Python 3 standard library.
 
 ## Recommended SQLite Constraints
 
@@ -187,8 +239,8 @@ Because `vite.config.js` sets `base: './'`, the built assets use relative paths 
 - ~~Make the UI fully multi-lingual with auto-detected language.~~ Done — see [Internationalization](#internationalization).
 - Add map links and address grouping by city or area.
 - Add a club detail drawer with feedback summaries.
-- Add import/export tooling for CSV and SQLite regeneration.
-- Add automated data validation for required fields.
+- ~~Add import/export tooling for CSV and SQLite regeneration.~~ Done — see [Data Import/Export Tooling](#data-importexport-tooling).
+- ~~Add automated data validation for required fields.~~ Done — covered by the same tooling; `tools/validate.py` checks required fields, controlled values, GPS ranges, and duplicates.
 - ~~Switch to `sql.js-httpvfs` with chunked loading once the database grows.~~ **Cancelled** — expected scale is at most ~80 clubs, keeping `dive_clubs.db` in the tens/low hundreds of KB (currently 68 KB for 4 clubs), well under the 660 KB sql.js WASM binary already shipped. Chunked HTTP-range loading solves multi-hundred-MB files; at this size it would add real complexity (custom VFS, worker coordination, cache-control tuning) for no measurable benefit. Revisit only if the schema changes to store large blobs (e.g. inline photos) or club count grows by an order of magnitude.
 - ~~Add rendering optimizations (virtualized rows, memoized diffing).~~ **Cancelled** — these solve jank at hundreds/thousands of rendered rows; a full table rebuild on every state change is imperceptible at the ~50-80 row ceiling expected here. Revisit only if row count grows well past that range.
 - Add TypeScript or JSDoc types, ESLint, and Vitest-based tests.
