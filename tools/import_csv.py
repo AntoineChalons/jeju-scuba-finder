@@ -34,10 +34,10 @@ def import_rows(conn, rows):
             """
             INSERT INTO clubs (
                 name, city, full_address, gps_lat, gps_lng,
-                website_url, naver_map_url, size, num_instructors,
+                website_url, naver_map_url, active, size, num_instructors,
                 years_of_existence, owns_boat, tec_diving, freediving,
                 estimated_price_per_dive_krw
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 row["name"],
@@ -47,6 +47,7 @@ def import_rows(conn, rows):
                 row["gps_lng"],
                 row["website_url"],
                 row["naver_map_url"],
+                row["active"],
                 row["size"],
                 row["num_instructors"],
                 row["years_of_existence"],

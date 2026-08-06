@@ -1,6 +1,5 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { t } from './i18n/i18n.js';
 
 // MapLibre GL JS + OpenFreeMap positron style — matches sibling project
 // jeju-beach-finder (see issue #10). Free tiles, no API key required.
@@ -47,22 +46,19 @@ function esc(v) {
   }[ch]));
 }
 
+// The popup is deliberately minimal: the club detail drawer (issue #2) now
+// carries the full record, so duplicating certs/languages/price here would
+// just be two places to keep in sync. What stays is exactly what issue #13
+// requires — the club identified over the map, with the name linking out to
+// its Naver Map page (falling back to the website when Naver is missing).
 function popupHtml(c) {
-  const empty = t('popup.emptyValue');
-  // Popup title links to Naver Map when available, otherwise the club
-  // website. Matches the click-through pattern used in jeju-beach-finder
-  // (see issue #13 acceptance criteria).
   const titleHref = c.naver_map_url || c.website_url || null;
   const titleHtml = titleHref
     ? `<a class="popup-title popup-title-link" href="${esc(titleHref)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}</a>`
     : `<div class="popup-title">${esc(c.name)}</div>`;
   return `
     ${titleHtml}
-    <div class="popup-row">${esc(c.city)}${c.full_address ? ' — ' + esc(c.full_address) : ''}</div>
-    <div class="popup-row">${t('popup.certs')}: ${esc(c.certifications) || empty}</div>
-    <div class="popup-row">${t('popup.languages')}: ${esc(c.languages_spoken) || empty}</div>
-    <div class="popup-row">${t('popup.price')}: ${c.estimated_price_per_dive_krw ? esc(c.estimated_price_per_dive_krw.toLocaleString()) + ' KRW' : empty}</div>
-    ${c.website_url ? `<div class="popup-row"><a href="${esc(c.website_url)}" target="_blank" rel="noopener noreferrer">${t('popup.website')}</a></div>` : ''}
+    <div class="popup-row">${esc(c.city)}</div>
   `;
 }
 
