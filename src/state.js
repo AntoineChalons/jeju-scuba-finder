@@ -16,7 +16,13 @@ const state = {
     certification: 'all',   // 'all' | one certification name
     size: 'all',            // 'all' | 'small' | 'medium' | 'large'
     language: 'all',        // 'all' | one language name
-    maxPrice: null           // null (no cap) | number in KRW
+    maxPrice: null,          // null (no cap) | number in KRW
+    // Capability checkboxes (issue #22). false = don't filter on this,
+    // true = keep only clubs whose column is truthy. Unknown values are
+    // excluded when a checkbox is on, matching the maxPrice rule.
+    ownsBoat: false,
+    tecDiving: false,
+    freediving: false
   }
 };
 

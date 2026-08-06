@@ -11,6 +11,9 @@ const DEFAULT_FILTERS = () => ({
   size: 'all',
   language: 'all',
   maxPrice: null,
+  ownsBoat: false,
+  tecDiving: false,
+  freediving: false,
 });
 
 function resetState() {

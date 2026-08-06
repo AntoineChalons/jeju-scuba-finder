@@ -58,6 +58,13 @@ export function applyFilters(clubs, filters) {
       if (c.estimated_price_per_dive_krw == null) return false;
       if (c.estimated_price_per_dive_krw > filters.maxPrice) return false;
     }
+    // Capability checkboxes (issue #22). Same rule as maxPrice: when the
+    // filter is on, an unknown (null) value is excluded because we can't
+    // confirm the club satisfies it. Column values are the SQLite
+    // integers 0/1, so a strict === 1 check keeps null out too.
+    if (filters.ownsBoat && c.owns_boat !== 1) return false;
+    if (filters.tecDiving && c.tec_diving !== 1) return false;
+    if (filters.freediving && c.freediving !== 1) return false;
     return true;
   });
 }

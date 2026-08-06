@@ -53,7 +53,11 @@ export const translations = {
       allLanguages: 'All languages',
       reset: 'Reset filters',
       showingAll: 'Showing all {total} clubs',
-      showingFiltered: 'Showing {filtered} of {total} clubs'
+      showingFiltered: 'Showing {filtered} of {total} clubs',
+      capabilities: 'Capabilities',
+      ownsBoat: 'Owns a boat',
+      tecDiving: 'Tec diving',
+      freediving: 'Freediving'
     },
     drawer: {
       title: 'Club details',
@@ -138,7 +142,11 @@ export const translations = {
       allLanguages: '所有语言',
       reset: '重置筛选',
       showingAll: '显示全部 {total} 家俱乐部',
-      showingFiltered: '显示 {filtered} / {total} 家俱乐部'
+      showingFiltered: '显示 {filtered} / {total} 家俱乐部',
+      capabilities: '装备与项目',
+      ownsBoat: '拥有船只',
+      tecDiving: '技术潜水',
+      freediving: '自由潜水'
     },
     drawer: {
       title: '俱乐部详情',
@@ -223,7 +231,11 @@ export const translations = {
       allLanguages: 'すべての言語',
       reset: 'フィルターをリセット',
       showingAll: '全{total}件のクラブを表示中',
-      showingFiltered: '{total}件中{filtered}件のクラブを表示中'
+      showingFiltered: '{total}件中{filtered}件のクラブを表示中',
+      capabilities: '対応項目',
+      ownsBoat: 'ボート所有',
+      tecDiving: 'テックダイビング',
+      freediving: 'フリーダイビング'
     },
     drawer: {
       title: 'クラブ詳細',
@@ -308,7 +320,11 @@ export const translations = {
       allLanguages: '모든 언어',
       reset: '필터 초기화',
       showingAll: '전체 {total}개 클럽 표시 중',
-      showingFiltered: '{total}개 중 {filtered}개 클럽 표시 중'
+      showingFiltered: '{total}개 중 {filtered}개 클럽 표시 중',
+      capabilities: '지원 항목',
+      ownsBoat: '보트 보유',
+      tecDiving: '테크니컬 다이빙',
+      freediving: '프리다이빙'
     },
     drawer: {
       title: '클럽 상세정보',
