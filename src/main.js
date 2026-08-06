@@ -1,4 +1,3 @@
-import 'leaflet/dist/leaflet.css';
 import { loadClubsFromDb } from './db-loader.js';
 import { buildDbStatusReport } from './db-diagnostics.js';
 import { initMap, renderMap, focusMarker } from './map-controller.js';

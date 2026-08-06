@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "leaflet": "^1.9.4",
+    "maplibre-gl": "^4.7.1",
     "sql.js": "^1.10.3"
   },
   "devDependencies": {
