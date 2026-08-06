@@ -41,14 +41,14 @@ CSV_COLUMNS = [
     "estimated_price_per_dive_krw",
     "languages_spoken",       # comma-joined, e.g. "English, Korean"
     "certifications",          # comma-joined, e.g. "PADI, NAUI"
-    "contact_methods",         # semicolon-joined "type:value", e.g. "email:a@b.com;mobile_phone:+82-10-..."
+    "contact_methods",         # semicolon-joined "type:value", e.g. "email:a@b.com;mobile_phone:+82-10-...;instagram:handle"
     "feedback",                 # semicolon-joined "source:rating:review_count:url", rating/review_count/url optional
 ]
 
 REQUIRED_COLUMNS = ["name", "city"]
 
 SIZE_VALUES = {"small", "medium", "large"}
-CONTACT_TYPES = {"email", "whatsapp", "kakaotalk", "mobile_phone"}
+CONTACT_TYPES = {"email", "whatsapp", "kakaotalk", "mobile_phone", "instagram"}
 BOOLEAN_COLUMNS = ["owns_boat", "tec_diving", "freediving"]
 INTEGER_COLUMNS = ["num_instructors", "years_of_existence", "estimated_price_per_dive_krw"]
 FLOAT_COLUMNS = ["gps_lat", "gps_lng"]

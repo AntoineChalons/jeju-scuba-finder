@@ -78,6 +78,14 @@ def parse_contact_methods(raw, row_num, errors):
         if not value:
             errors.append(f"row {row_num}: contact_methods entry '{entry}' is missing a value")
             continue
+        if ctype == "instagram":
+            if value.startswith("@"):
+                value = value[1:]
+            if "/" in value or " " in value or "." in value:
+                errors.append(
+                    f"row {row_num}: contact_methods instagram value '{value}' must be a bare handle, not a URL"
+                )
+                continue
         result.append((ctype, value))
     return result
 
