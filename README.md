@@ -204,16 +204,11 @@ Contributions are welcome. Good contribution candidates include:
 
 When contributing data, verify the source and keep the schema consistent with the existing normalized design.
 
-## License
-
-Choose a license before public release. If this repository is private or personal, you can keep it unlicensed until you are ready to publish.
-
 ## Acknowledgments
 
 - Jeju dive operators and public map/review listings used as data sources.
 - SQLite and sql.js for enabling browser-side database access.
 - GitHub Pages for static deployment.
-
 
 ## Map and Sorting Behavior
 
