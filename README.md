@@ -149,6 +149,18 @@ This bundles `src/` into `dist/`, copies everything in `public/` (including `div
 npm run preview
 ```
 
+### Lint and test
+
+```bash
+npm run lint      # ESLint on all JS
+npm test          # Vitest, pure-logic unit tests (filters, state)
+pytest tools/     # Data-pipeline unit tests (validate, schema)
+```
+
+All three run on every pull request via `.github/workflows/ci.yml`, and again on push to `main` before deploy via `.github/workflows/deploy.yml`. Any failure blocks the deploy.
+
+Test scope is deliberately narrow: the pure-logic and pure-data layers are covered, DOM controllers (map, table, drawer) are still verified by the browser walkthrough on each PR. See issue #20 for the deferred JSDoc + DOM test work.
+
 ## How It Works
 
 The frontend fetches `dive_clubs.db` (served from `public/` at build time) in the browser, opens it with sql.js's WebAssembly build, and queries the `v_club_dashboard` view. The resulting rows are rendered into a sortable HTML table, so the dashboard works without a backend API.
