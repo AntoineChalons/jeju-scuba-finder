@@ -1,21 +1,16 @@
-name: Build and deploy to GitHub Pages
+# PR gate. The existing `deploy.yml` runs the same checks on `push: main`
+# so the deployed artifact is guaranteed clean, but nothing was blocking
+# a PR before it merged. This workflow adds that gate: any PR against
+# main runs lint + JS tests + Python tests + build, and merging is
+# blocked until they pass.
+name: CI
 
 on:
-  push:
+  pull_request:
     branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -49,19 +44,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - name: Upload build artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
