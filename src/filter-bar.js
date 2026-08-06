@@ -20,6 +20,12 @@ export function renderFilterLabels() {
   document.querySelector('label[for="filter-max-price"]').textContent = t('filters.maxPrice');
   document.getElementById('filter-max-price').placeholder = t('filters.noLimit');
   document.getElementById('filter-reset').textContent = t('filters.reset');
+  // Capability checkboxes (issue #22). The label element wraps the input
+  // and a <span>, so we set the span text and leave the checkbox alone.
+  document.querySelector('#filter-owns-boat + span').textContent = t('filters.ownsBoat');
+  document.querySelector('#filter-tec-diving + span').textContent = t('filters.tecDiving');
+  document.querySelector('#filter-freediving + span').textContent = t('filters.freediving');
+  document.querySelector('.filter-checks').setAttribute('aria-label', t('filters.capabilities'));
 }
 
 /** Populate the <select> elements once the club dataset has loaded (or locale changes). */
@@ -38,6 +44,9 @@ export function syncFilterControls(filters) {
   document.getElementById('filter-size').value = filters.size;
   document.getElementById('filter-language').value = filters.language;
   document.getElementById('filter-max-price').value = filters.maxPrice ?? '';
+  document.getElementById('filter-owns-boat').checked = filters.ownsBoat;
+  document.getElementById('filter-tec-diving').checked = filters.tecDiving;
+  document.getElementById('filter-freediving').checked = filters.freediving;
 }
 
 /** Show how many clubs matched vs. the total, and enable/disable reset. */
@@ -55,7 +64,10 @@ function isDefaultFilterUi() {
   return document.getElementById('filter-certification').value === 'all' &&
     document.getElementById('filter-size').value === 'all' &&
     document.getElementById('filter-language').value === 'all' &&
-    document.getElementById('filter-max-price').value === '';
+    document.getElementById('filter-max-price').value === '' &&
+    !document.getElementById('filter-owns-boat').checked &&
+    !document.getElementById('filter-tec-diving').checked &&
+    !document.getElementById('filter-freediving').checked;
 }
 
 /**
@@ -75,5 +87,11 @@ export function bindFilterHandlers(onChange, onReset) {
       const val = e.target.value;
       onChange('maxPrice', val === '' ? null : Number(val));
     });
+  document.getElementById('filter-owns-boat')
+    .addEventListener('change', e => onChange('ownsBoat', e.target.checked));
+  document.getElementById('filter-tec-diving')
+    .addEventListener('change', e => onChange('tecDiving', e.target.checked));
+  document.getElementById('filter-freediving')
+    .addEventListener('change', e => onChange('freediving', e.target.checked));
   document.getElementById('filter-reset').addEventListener('click', onReset);
 }

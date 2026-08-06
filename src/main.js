@@ -9,7 +9,15 @@ import { renderFilterLabels, renderFilterOptions, syncFilterControls, updateFilt
 import { getInitialLocale, setLocale, t } from './i18n/i18n.js';
 import { renderLanguageSwitcher, bindLanguageSwitcher } from './i18n/language-switcher.js';
 
-const DEFAULT_FILTERS = { certification: 'all', size: 'all', language: 'all', maxPrice: null };
+const DEFAULT_FILTERS = {
+  certification: 'all',
+  size: 'all',
+  language: 'all',
+  maxPrice: null,
+  ownsBoat: false,
+  tecDiving: false,
+  freediving: false
+};
 
 function selectClub(clubId) {
   const { selectedClubId } = getState();
