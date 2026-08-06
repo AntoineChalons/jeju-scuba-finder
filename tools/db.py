@@ -30,7 +30,7 @@ CREATE TABLE clubs (
 CREATE TABLE contact_methods (
     contact_id INTEGER PRIMARY KEY AUTOINCREMENT,
     club_id INTEGER NOT NULL REFERENCES clubs(club_id) ON DELETE CASCADE,
-    contact_type TEXT CHECK(contact_type IN ('email','whatsapp','kakaotalk','mobile_phone')) NOT NULL,
+    contact_type TEXT CHECK(contact_type IN ('email','whatsapp','kakaotalk','mobile_phone','instagram')) NOT NULL,
     contact_value TEXT NOT NULL,
     UNIQUE(club_id, contact_type, contact_value)
 );

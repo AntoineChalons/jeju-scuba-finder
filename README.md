@@ -181,7 +181,7 @@ One row = one club. Most columns map 1:1 onto the `clubs` table. A few columns p
 | `owns_boat`, `tec_diving`, `freediving` | `yes`/`no` (also accepts `true`/`false`, `1`/`0`), or blank for unknown | `yes` |
 | `languages_spoken` | comma-joined language names | `English, Korean` |
 | `certifications` | comma-joined certification names | `PADI, NAUI` |
-| `contact_methods` | semicolon-joined `type:value` pairs; type is one of `email`, `whatsapp`, `kakaotalk`, `mobile_phone` | `email:a@b.com;mobile_phone:+82-10-1234-5678` |
+| `contact_methods` | semicolon-joined `type:value` pairs; type is one of `email`, `whatsapp`, `kakaotalk`, `mobile_phone`, `instagram` (Instagram stored as bare handle, no `@`, no URL) | `email:a@b.com;mobile_phone:+82-10-1234-5678;instagram:jeju_dive_club` |
 | `feedback` | semicolon-joined `source:rating:review_count:url`; only `source` is required, trailing fields may be omitted | `TripAdvisor:4.5:12:https://...` or just `Reddit` |
 
 Languages, certifications, and feedback sources don't need to be predefined — any new name in the CSV is created automatically on import.
