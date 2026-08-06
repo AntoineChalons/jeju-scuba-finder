@@ -1,16 +1,43 @@
-import L from 'leaflet';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { t } from './i18n/i18n.js';
 
-let map, markersLayer;
+// MapLibre GL JS + OpenFreeMap positron style — matches sibling project
+// jeju-beach-finder (see issue #10). Free tiles, no API key required.
+
+let map;
+let onMarkerClickCallback = null;
 const markerRefs = {};
 
+const COLOR_DEFAULT_STROKE = '#7fd8f5';
+const COLOR_DEFAULT_FILL = '#1b4b63';
+const COLOR_SELECTED = '#4fd1c5';
+
+function markerEl(isSelected) {
+  const el = document.createElement('div');
+  const size = isSelected ? 22 : 14;
+  Object.assign(el.style, {
+    width: size + 'px',
+    height: size + 'px',
+    borderRadius: '50%',
+    background: isSelected ? COLOR_SELECTED : COLOR_DEFAULT_FILL,
+    border: '2px solid ' + (isSelected ? COLOR_SELECTED : COLOR_DEFAULT_STROKE),
+    boxShadow: '0 0 0 1px rgba(0,0,0,0.35)',
+    cursor: 'pointer',
+    boxSizing: 'border-box'
+  });
+  return el;
+}
+
 export function initMap() {
-  map = L.map('map', { scrollWheelZoom: true }).setView([33.35, 126.55], 10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-  markersLayer = L.layerGroup().addTo(map);
+  map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://tiles.openfreemap.org/styles/positron',
+    center: [126.55, 33.35],
+    zoom: 9.2,
+    attributionControl: true
+  });
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 }
 
 function popupHtml(c) {
@@ -26,34 +53,44 @@ function popupHtml(c) {
 }
 
 export function renderMap(list, selectedClubId, onMarkerClick) {
-  markersLayer.clearLayers();
+  onMarkerClickCallback = onMarkerClick;
+
+  // Remove previous markers before re-rendering.
+  Object.values(markerRefs).forEach(entry => entry.marker.remove());
   Object.keys(markerRefs).forEach(k => delete markerRefs[k]);
-  const bounds = [];
+
+  const bounds = new maplibregl.LngLatBounds();
+  let plotted = 0;
 
   for (const c of list) {
     if (c.gps_lat == null || c.gps_lng == null) continue;
-    const marker = L.circleMarker([c.gps_lat, c.gps_lng], {
-      radius: c.club_id === selectedClubId ? 11 : 7,
-      color: c.club_id === selectedClubId ? '#4fd1c5' : '#7fd8f5',
-      fillColor: c.club_id === selectedClubId ? '#4fd1c5' : '#1b4b63',
-      fillOpacity: 0.9,
-      weight: 2
-    }).bindPopup(popupHtml(c));
-    marker.on('click', () => onMarkerClick(c.club_id));
-    marker.addTo(markersLayer);
-    markerRefs[c.club_id] = marker;
-    bounds.push([c.gps_lat, c.gps_lng]);
+    const isSelected = c.club_id === selectedClubId;
+    const el = markerEl(isSelected);
+    const popup = new maplibregl.Popup({ offset: 14, maxWidth: '260px' }).setHTML(popupHtml(c));
+    const marker = new maplibregl.Marker({ element: el })
+      .setLngLat([c.gps_lng, c.gps_lat])
+      .setPopup(popup)
+      .addTo(map);
+    el.addEventListener('click', () => {
+      if (onMarkerClickCallback) onMarkerClickCallback(c.club_id);
+    });
+    markerRefs[c.club_id] = { marker, popup };
+    bounds.extend([c.gps_lng, c.gps_lat]);
+    plotted++;
   }
 
-  if (bounds.length) {
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+  if (plotted > 0) {
+    // Defer to next frame so the map has current size when style is still loading.
+    const applyFit = () => map.fitBounds(bounds, { padding: 40, maxZoom: 13, duration: 400 });
+    if (map.loaded()) applyFit();
+    else map.once('load', applyFit);
   }
 }
 
 export function focusMarker(clubId) {
-  const marker = markerRefs[clubId];
-  if (marker) {
-    map.panTo(marker.getLatLng());
-    marker.openPopup();
-  }
+  const entry = markerRefs[clubId];
+  if (!entry) return;
+  const lngLat = entry.marker.getLngLat();
+  map.easeTo({ center: lngLat, duration: 400 });
+  entry.popup.addTo(map);
 }

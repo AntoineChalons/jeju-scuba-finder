@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>Jeju Dive Club Comparator</title>
 <script type="module" src="/src/main.js"></script>
 <style>
@@ -129,11 +130,15 @@ a{color:#7fd8f5;}
 .footer-links a:hover{
   border-bottom-color:var(--accent);
 }
-.leaflet-popup-content-wrapper{
-  background:#0f2937;
-  color:var(--text);
+.maplibregl-popup-content{
+  background:#0f2937 !important;
+  color:var(--text) !important;
+  border-radius:6px;
+  padding:10px 12px;
 }
-.leaflet-popup-tip{background:#0f2937;}
+.maplibregl-popup-tip{border-top-color:#0f2937 !important;border-bottom-color:#0f2937 !important;}
+.maplibregl-popup-close-button{color:var(--text-muted) !important;font-size:16px !important;padding:2px 6px !important;}
+.maplibregl-ctrl-attrib a{color:var(--accent);}
 .popup-title{font-weight:700;color:var(--accent);margin-bottom:4px;}
 .popup-row{font-size:12px;color:var(--text-muted);margin:2px 0;}
 .filter-bar{
@@ -228,17 +233,13 @@ a{color:#7fd8f5;}
       <thead>
       <tr>
         <th data-key="name">Name</th>
-        <th data-key="city">City</th>
         <th data-key="size">Size</th>
-        <th data-key="num_instructors">Instructors</th>
         <th data-key="years_of_existence">Years</th>
-        <th data-key="languages_spoken">Languages</th>
         <th data-key="certifications">Certs</th>
         <th data-key="owns_boat">Boat</th>
         <th data-key="tec_diving">Tec</th>
         <th data-key="freediving">Free</th>
         <th data-key="estimated_price_per_dive_krw">Price/dive (KRW)</th>
-        <th data-key="avg_rating">Avg rating</th>
         <th data-key="website_url">Website</th>
         <th data-key="naver_map_url">Naver Map</th>
       </tr>

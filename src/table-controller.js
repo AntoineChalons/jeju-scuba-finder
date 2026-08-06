@@ -23,17 +23,13 @@ function boolBadge(v) {
 export function renderTableHeaders() {
   const keyToI18n = {
     name: 'table.name',
-    city: 'table.city',
     size: 'table.size',
-    num_instructors: 'table.instructors',
     years_of_existence: 'table.years',
-    languages_spoken: 'table.languages',
     certifications: 'table.certs',
     owns_boat: 'table.boat',
     tec_diving: 'table.tec',
     freediving: 'table.free',
     estimated_price_per_dive_krw: 'table.price',
-    avg_rating: 'table.rating',
     website_url: 'table.website',
     naver_map_url: 'table.naverMap'
   };
@@ -53,17 +49,13 @@ export function renderTable(sortedClubs, selectedClubId, onRowClick) {
     if (c.club_id === selectedClubId) tr.classList.add('selected-row');
     tr.innerHTML = `
       <td>${c.name}</td>
-      <td>${c.city}</td>
       <td>${c.size || empty}</td>
-      <td>${c.num_instructors ?? empty}</td>
       <td>${c.years_of_existence ?? empty}</td>
-      <td>${c.languages_spoken || empty}</td>
       <td>${c.certifications || empty}</td>
       <td>${boolBadge(c.owns_boat)}</td>
       <td>${boolBadge(c.tec_diving)}</td>
       <td>${boolBadge(c.freediving)}</td>
       <td>${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() : empty}</td>
-      <td>${c.avg_rating ?? empty}</td>
       <td>${c.website_url ? `<a href="${c.website_url}" target="_blank" rel="noopener noreferrer">${t('table.link')}</a>` : empty}</td>
       <td>${c.naver_map_url ? `<a href="${c.naver_map_url}" target="_blank" rel="noopener noreferrer">${t('table.map')}</a>` : empty}</td>
     `;
