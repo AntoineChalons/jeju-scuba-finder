@@ -16,6 +16,10 @@ CREATE TABLE clubs (
     gps_lng REAL,
     website_url TEXT,
     naver_map_url TEXT,
+    -- Whether the club is believed to still be trading. Inactive clubs are
+    -- kept in the database (so their ids and URLs stay stable and the
+    -- research trail is preserved) but are not surfaced in the UI.
+    active BOOLEAN NOT NULL DEFAULT 1,
     size TEXT CHECK(size IN ('small','medium','large')),
     num_instructors INTEGER,
     years_of_existence INTEGER,
@@ -83,6 +87,7 @@ SELECT
     c.gps_lng,
     c.website_url,
     c.naver_map_url,
+    c.active,
     c.size,
     c.num_instructors,
     c.years_of_existence,
@@ -93,7 +98,19 @@ SELECT
     (SELECT GROUP_CONCAT(l.language_name, ', ') FROM club_languages cl JOIN languages l ON l.language_id=cl.language_id WHERE cl.club_id=c.club_id) AS languages_spoken,
     (SELECT GROUP_CONCAT(cert.certification_name, ', ') FROM club_certifications cc JOIN certifications cert ON cert.certification_id=cc.certification_id WHERE cc.club_id=c.club_id) AS certifications,
     (SELECT AVG(rating) FROM club_feedback f WHERE f.club_id=c.club_id) AS avg_rating,
-    (SELECT SUM(review_count) FROM club_feedback f WHERE f.club_id=c.club_id) AS total_reviews
+    (SELECT SUM(review_count) FROM club_feedback f WHERE f.club_id=c.club_id) AS total_reviews,
+    -- Packed multi-value columns for the club detail drawer. Same delimiter
+    -- convention as the CSV (see tools/schema.py): semicolon between
+    -- entries, colon between fields. Packing them into the existing view
+    -- keeps the frontend on a single query instead of issuing a follow-up
+    -- lookup per selected club.
+    (SELECT GROUP_CONCAT(cm.contact_type || ':' || cm.contact_value, ';')
+       FROM contact_methods cm WHERE cm.club_id=c.club_id) AS contact_methods,
+    (SELECT GROUP_CONCAT(
+              fs.source_name || ':' || COALESCE(f.rating,'') || ':' ||
+              COALESCE(f.review_count,'') || ':' || COALESCE(f.url,''), ';')
+       FROM club_feedback f JOIN feedback_sources fs ON fs.source_id=f.source_id
+      WHERE f.club_id=c.club_id) AS feedback
 FROM clubs c;
 """
 

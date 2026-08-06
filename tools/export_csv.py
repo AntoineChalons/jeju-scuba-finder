@@ -72,6 +72,7 @@ def export_rows(conn):
             "gps_lng": num_to_csv(club["gps_lng"]),
             "website_url": club["website_url"] or "",
             "naver_map_url": club["naver_map_url"] or "",
+            "active": bool_to_csv(club["active"]),
             "size": club["size"] or "",
             "num_instructors": num_to_csv(club["num_instructors"]),
             "years_of_existence": num_to_csv(club["years_of_existence"]),

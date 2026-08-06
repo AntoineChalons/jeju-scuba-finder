@@ -206,6 +206,138 @@ a{color:#7fd8f5;}
   margin-left:auto;
   align-self:center;
 }
+
+/* ---------- Club detail drawer (issue #2) ---------- */
+/* Desktop: a non-modal side panel docked to the right edge.
+   Narrow viewports (<900px, matching the .layout breakpoint): a modal
+   bottom sheet with a backdrop. */
+.club-drawer{
+  position:fixed;
+  top:0;
+  right:0;
+  bottom:0;
+  width:min(380px, 92vw);
+  background:var(--surface);
+  border-left:1px solid var(--border);
+  box-shadow:-8px 0 28px rgba(0,0,0,.4);
+  display:flex;
+  flex-direction:column;
+  z-index:1100;
+  overflow:hidden;
+}
+.club-drawer[hidden]{display:none;}
+.drawer-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 16px;
+  border-bottom:1px solid var(--border);
+  background:var(--surface-2);
+  flex-shrink:0;
+}
+.drawer-header h2{
+  margin:0;
+  font-size:17px;
+  line-height:1.3;
+  color:var(--accent);
+  /* Long club names must wrap rather than overflow the fixed-width panel. */
+  overflow-wrap:anywhere;
+}
+.drawer-close{
+  background:transparent;
+  color:var(--text-muted);
+  border:1px solid var(--border);
+  border-radius:6px;
+  font-size:18px;
+  line-height:1;
+  padding:4px 9px;
+  cursor:pointer;
+  flex-shrink:0;
+}
+.drawer-close:hover{background:#175373;color:var(--text);}
+.drawer-close:focus-visible,
+.club-drawer a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.drawer-body{
+  padding:4px 16px 20px;
+  overflow-y:auto;
+  flex:1;
+}
+.drawer-section{margin-top:16px;}
+.drawer-section h3{
+  margin:0 0 8px;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  color:var(--text-muted);
+}
+.drawer-list{margin:0;}
+.drawer-row{
+  display:grid;
+  grid-template-columns:minmax(0,110px) minmax(0,1fr);
+  gap:10px;
+  padding:5px 0;
+  border-bottom:1px solid rgba(35,68,68,.5);
+  font-size:13px;
+}
+.drawer-row dt{color:var(--text-muted);overflow-wrap:anywhere;}
+.drawer-row dd{margin:0;overflow-wrap:anywhere;}
+.drawer-empty{
+  margin:0;
+  font-size:13px;
+  color:var(--text-muted);
+  font-style:italic;
+}
+.contact-list{list-style:none;margin:0;padding:0;}
+.contact-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:6px 0;
+  border-bottom:1px solid rgba(35,68,68,.5);
+}
+.contact-icon{
+  flex-shrink:0;
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  font-size:14px;
+}
+.contact-body{display:flex;flex-direction:column;min-width:0;}
+.contact-label{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  color:var(--text-muted);
+}
+.contact-value{font-size:13px;overflow-wrap:anywhere;}
+.drawer-backdrop{display:none;}
+@media (max-width: 899px){
+  .club-drawer{
+    top:auto;
+    left:0;
+    right:0;
+    width:auto;
+    max-height:82vh;
+    border-left:none;
+    border-top:1px solid var(--border);
+    border-radius:12px 12px 0 0;
+    box-shadow:0 -8px 28px rgba(0,0,0,.5);
+  }
+  body.drawer-open .drawer-backdrop{
+    display:block;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    z-index:1050;
+  }
+  /* Stop the page scrolling behind the sheet. */
+  body.drawer-open{overflow:hidden;}
+}
 </style>
 </head>
 <body>
@@ -261,6 +393,15 @@ a{color:#7fd8f5;}
     </table>
   </div>
 </div>
+
+<div id="drawer-backdrop" class="drawer-backdrop"></div>
+<aside id="club-drawer" class="club-drawer" role="dialog" aria-labelledby="drawer-title" hidden>
+  <header class="drawer-header">
+    <h2 id="drawer-title"></h2>
+    <button id="drawer-close" type="button" class="drawer-close" data-drawer-close aria-label="Close details">&times;</button>
+  </header>
+  <div id="drawer-body" class="drawer-body"></div>
+</aside>
 
 <div class="footer-links">
   <span id="footer-prompt">Spotted an error or missing club?</span> <a id="footer-link" href="https://github.com/antoinechalons/jeju-scuba-finder/issues/new" target="_blank" rel="noopener noreferrer">Suggest edits on GitHub</a>

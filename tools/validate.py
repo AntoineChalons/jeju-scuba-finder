@@ -10,6 +10,7 @@ from schema import (
     SIZE_VALUES,
     CONTACT_TYPES,
     BOOLEAN_COLUMNS,
+    DEFAULT_TRUE_BOOLEAN_COLUMNS,
     INTEGER_COLUMNS,
     FLOAT_COLUMNS,
     TRUE_STRINGS,
@@ -138,7 +139,16 @@ def validate_and_normalize_row(raw_row, row_num, errors):
     normalized["size"] = size or None
 
     for col in BOOLEAN_COLUMNS:
-        normalized[col] = _parse_bool(raw_row.get(col), row_num, col, errors)
+        raw = (raw_row.get(col) or "").strip()
+        value = _parse_bool(raw_row.get(col), row_num, col, errors)
+        # `active` is the one boolean that is not tri-state: an *empty* cell
+        # means the club is assumed to be in business, so new rows don't
+        # have to spell it out. See DEFAULT_TRUE_BOOLEAN_COLUMNS. Only a
+        # genuinely blank cell defaults — an unparseable value keeps its
+        # error and stays None rather than silently becoming "active".
+        if not raw and col in DEFAULT_TRUE_BOOLEAN_COLUMNS:
+            value = True
+        normalized[col] = value
 
     for col in INTEGER_COLUMNS:
         normalized[col] = _parse_int(raw_row.get(col), row_num, col, errors)

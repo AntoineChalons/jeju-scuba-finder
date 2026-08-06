@@ -32,6 +32,7 @@ CSV_COLUMNS = [
     "gps_lng",
     "website_url",
     "naver_map_url",
+    "active",                  # true/false; blank means true (see DEFAULT_TRUE_BOOLEAN_COLUMNS)
     "size",
     "num_instructors",
     "years_of_existence",
@@ -49,7 +50,13 @@ REQUIRED_COLUMNS = ["name", "city"]
 
 SIZE_VALUES = {"small", "medium", "large"}
 CONTACT_TYPES = {"email", "whatsapp", "kakaotalk", "mobile_phone", "instagram"}
-BOOLEAN_COLUMNS = ["owns_boat", "tec_diving", "freediving"]
+BOOLEAN_COLUMNS = ["owns_boat", "tec_diving", "freediving", "active"]
+
+# Booleans whose absence means "true" rather than "unknown". `active` is the
+# only one: a club is assumed to be in business unless we have positive
+# evidence otherwise, so an author adding a new row never has to remember
+# to type `true`. Every other boolean stays tri-state (true/false/unknown).
+DEFAULT_TRUE_BOOLEAN_COLUMNS = {"active"}
 INTEGER_COLUMNS = ["num_instructors", "years_of_existence", "estimated_price_per_dive_krw"]
 FLOAT_COLUMNS = ["gps_lat", "gps_lng"]
 

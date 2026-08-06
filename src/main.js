@@ -1,6 +1,7 @@
 import { loadClubsFromDb } from './db-loader.js';
 import { buildDbStatusReport } from './db-diagnostics.js';
 import { initMap, renderMap, focusMarker } from './map-controller.js';
+import { initDrawer, renderDrawer } from './drawer-controller.js';
 import { sortClubs, renderTable, renderTableHeaders, updateSortArrows, bindSortHandlers } from './table-controller.js';
 import { getState, setState, setFilter, subscribe } from './state.js';
 import { buildFilterOptions, applyFilters } from './filters.js';
@@ -15,6 +16,15 @@ function selectClub(clubId) {
   setState({ selectedClubId: selectedClubId === clubId ? null : clubId });
   const next = getState().selectedClubId;
   if (next != null) focusMarker(next);
+}
+
+/**
+ * The drawer's own close button / Esc / backdrop clear the selection, which
+ * funnels back through the normal render pipeline so the table row and map
+ * marker de-highlight in step with the drawer closing.
+ */
+function onDrawerClose() {
+  if (getState().selectedClubId != null) setState({ selectedClubId: null });
 }
 
 function onSortChange(key) {
@@ -86,6 +96,10 @@ function render(state) {
   renderTable(sorted, state.selectedClubId, selectClub);
   updateSortArrows(state.sortKey, state.sortAsc);
   renderMap(sorted, state.selectedClubId, selectClub);
+  // Drive the drawer off the filtered list, not state.clubs: if the
+  // selected club is filtered out, find() returns undefined and the drawer
+  // closes rather than describing a club that is no longer on screen.
+  renderDrawer(sorted.find(c => c.club_id === state.selectedClubId) || null);
 
   syncFilterControls(state.filters);
   updateFilterSummary(filtered.length, state.clubs.length);
@@ -104,6 +118,7 @@ async function init() {
   });
 
   initMap();
+  initDrawer(onDrawerClose);
   bindSortHandlers(onSortChange);
   bindFilterHandlers(onFilterChange, onFilterReset);
   subscribe(render);

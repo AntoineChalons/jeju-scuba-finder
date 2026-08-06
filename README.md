@@ -99,7 +99,18 @@ The database uses a normalized schema so the project can grow without becoming a
 - `languages` and `club_languages`: many-to-many language support.
 - `certifications` and `club_certifications`: many-to-many certification support.
 - `feedback_sources` and `club_feedback`: ratings and review metadata per platform.
-- `v_club_dashboard`: a view that flattens the schema for the frontend dashboard.
+- `v_club_dashboard`: a view that flattens the schema for the frontend dashboard, including `contact_methods` and `feedback` packed with the same delimiters the CSV uses.
+
+### Inactive clubs
+
+`clubs.active` records whether a club is believed to still be trading. Clubs that close are **not deleted**: keeping the row preserves stable `club_id`s, avoids breaking any URL that references them, and keeps the research trail in `data/jeju_club_research_report.md` intact. The frontend simply never loads them (`WHERE active = 1` in `src/db-loader.js`), so they are absent from the map, the table, the filter dropdowns and the result counts alike.
+
+A club is marked inactive only when **both** signals fail:
+
+1. no dated content of any kind (customer review, third-party blog post, or the shop's own posting) since January 2024, and
+2. a failed business-presence check — a dead or unreachable website, or no current map place record.
+
+Review silence alone is not enough. Sea Sky Jeju, for instance, has no independent star rating since 2022 but posts to its own blog as recently as July 2026, so it stays active.
 
 ## Local Development
 
@@ -179,6 +190,7 @@ One row = one club. Most columns map 1:1 onto the `clubs` table. A few columns p
 | `size` | `small` \| `medium` \| `large`, or blank | `small` |
 | `num_instructors`, `years_of_existence`, `estimated_price_per_dive_krw` | optional integer | `2` |
 | `owns_boat`, `tec_diving`, `freediving` | `yes`/`no` (also accepts `true`/`false`, `1`/`0`), or blank for unknown | `yes` |
+| `active` | `yes`/`no`; **blank means `yes`**. Unlike the other booleans this is not tri-state — a club is assumed to be trading unless we have evidence otherwise | `no` |
 | `languages_spoken` | comma-joined language names | `English, Korean` |
 | `certifications` | comma-joined certification names | `PADI, NAUI` |
 | `contact_methods` | semicolon-joined `type:value` pairs; type is one of `email`, `whatsapp`, `kakaotalk`, `mobile_phone`, `instagram` (Instagram stored as bare handle, no `@`, no URL) | `email:a@b.com;mobile_phone:+82-10-1234-5678;instagram:jeju_dive_club` |
