@@ -280,3 +280,7 @@ A **Suggest edits** link is included in the interface and points to the reposito
 - Clubs with no recorded price are excluded once a max-price filter is set, since their eligibility can't be confirmed.
 - The summary line ("Showing X of Y clubs") and the table/map both update together, since they're driven by the same filtered-and-sorted list computed from state on every change.
 - "Reset filters" clears all four filters at once and is disabled whenever the filter bar is already at its default state.
+
+## Data source
+
+Refer to [Jeju Club Research](./data/jeju_club_research_report.md) to understand how data was collected.
