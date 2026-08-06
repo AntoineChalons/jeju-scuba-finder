@@ -40,15 +40,29 @@ export function initMap() {
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 }
 
+// Basic HTML-attribute escape for values interpolated inside href="" and text.
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
 function popupHtml(c) {
   const empty = t('popup.emptyValue');
+  // Popup title links to Naver Map when available, otherwise the club
+  // website. Matches the click-through pattern used in jeju-beach-finder
+  // (see issue #13 acceptance criteria).
+  const titleHref = c.naver_map_url || c.website_url || null;
+  const titleHtml = titleHref
+    ? `<a class="popup-title popup-title-link" href="${esc(titleHref)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}</a>`
+    : `<div class="popup-title">${esc(c.name)}</div>`;
   return `
-    <div class="popup-title">${c.name}</div>
-    <div class="popup-row">${c.city}${c.full_address ? ' — ' + c.full_address : ''}</div>
-    <div class="popup-row">${t('popup.certs')}: ${c.certifications || empty}</div>
-    <div class="popup-row">${t('popup.languages')}: ${c.languages_spoken || empty}</div>
-    <div class="popup-row">${t('popup.price')}: ${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() + ' KRW' : empty}</div>
-    ${c.website_url ? `<div class="popup-row"><a href="${c.website_url}" target="_blank" rel="noopener noreferrer">${t('popup.website')}</a></div>` : ''}
+    ${titleHtml}
+    <div class="popup-row">${esc(c.city)}${c.full_address ? ' — ' + esc(c.full_address) : ''}</div>
+    <div class="popup-row">${t('popup.certs')}: ${esc(c.certifications) || empty}</div>
+    <div class="popup-row">${t('popup.languages')}: ${esc(c.languages_spoken) || empty}</div>
+    <div class="popup-row">${t('popup.price')}: ${c.estimated_price_per_dive_krw ? esc(c.estimated_price_per_dive_krw.toLocaleString()) + ' KRW' : empty}</div>
+    ${c.website_url ? `<div class="popup-row"><a href="${esc(c.website_url)}" target="_blank" rel="noopener noreferrer">${t('popup.website')}</a></div>` : ''}
   `;
 }
 
@@ -75,6 +89,14 @@ export function renderMap(list, selectedClubId, onMarkerClick) {
       if (onMarkerClickCallback) onMarkerClickCallback(c.club_id);
     });
     markerRefs[c.club_id] = { marker, popup };
+    // Re-open the popup for the currently-selected club so a row click,
+    // marker click, filter change or locale switch always ends up with the
+    // selected club's details visible over the map (issue #13). Use
+    // marker.togglePopup() rather than popup.addTo(map): the popup is
+    // already bound to the marker via setPopup(), and toggle is the
+    // documented way to open a bound popup — popup.addTo(map) is unreliable
+    // for bound popups in MapLibre.
+    if (isSelected) marker.togglePopup();
     bounds.extend([c.gps_lng, c.gps_lat]);
     plotted++;
   }
@@ -92,5 +114,8 @@ export function focusMarker(clubId) {
   if (!entry) return;
   const lngLat = entry.marker.getLngLat();
   map.easeTo({ center: lngLat, duration: 400 });
-  entry.popup.addTo(map);
+  // renderMap() already opens the popup for the selected club during its
+  // pass. focusMarker() only needs to ensure it is open in the (rare) case
+  // where the state change reaches focusMarker before renderMap.
+  if (!entry.popup.isOpen()) entry.marker.togglePopup();
 }

@@ -140,6 +140,19 @@ a{color:#7fd8f5;}
 .maplibregl-popup-close-button{color:var(--text-muted) !important;font-size:16px !important;padding:2px 6px !important;}
 .maplibregl-ctrl-attrib a{color:var(--accent);}
 .popup-title{font-weight:700;color:var(--accent);margin-bottom:4px;}
+.popup-title-link{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  text-decoration:none;
+  border-bottom:1px solid transparent;
+}
+.popup-title-link:hover{border-bottom-color:var(--accent);}
+.popup-title-link::after{
+  content:'↗';
+  font-size:11px;
+  opacity:0.75;
+}
 .popup-row{font-size:12px;color:var(--text-muted);margin:2px 0;}
 .filter-bar{
   display:flex;

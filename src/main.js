@@ -49,6 +49,10 @@ function renderStaticText(state) {
   document.getElementById('page-subtitle').textContent = t('subtitle');
   document.getElementById('footer-prompt').textContent = t('footer.prompt');
   document.getElementById('footer-link').textContent = t('footer.link');
+  // The #status element is used for the developer diagnostics banner,
+  // gated behind ?debug=1 (see db-diagnostics.js). In non-debug mode
+  // buildDbStatusReport() returns '', so we don't render the transient
+  // "Loading\u2026" text either—the header row alone is enough for users.
   const statusEl = document.getElementById('status');
   if (state.clubs.length) {
     statusEl.innerHTML = buildDbStatusReport(state.clubs);
@@ -59,7 +63,10 @@ function renderStaticText(state) {
     syncFilterControls(state.filters);
     updateFilterSummary(applyFilters(state.clubs, state.filters).length, state.clubs.length);
   } else {
-    statusEl.textContent = t('loading');
+    const debugReport = buildDbStatusReport(state.clubs);
+    statusEl.innerHTML = debugReport || '';
+    if (!debugReport) statusEl.textContent = '';
+    else statusEl.textContent = t('loading');
   }
   renderTableHeaders();
   renderFilterLabels();
