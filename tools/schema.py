@@ -2,22 +2,27 @@
 Canonical CSV schema for dive club data.
 
 One CSV row = one club. Multi-value fields (languages, certifications,
-contact methods, feedback entries) are packed into single delimited
-cells so the whole dataset stays a flat, spreadsheet-friendly file that
-maps 1:1 onto the normalized SQLite schema in db.py:
+contact methods) are packed into single delimited cells so the whole
+dataset stays a flat, spreadsheet-friendly file that maps 1:1 onto the
+normalized SQLite schema in db.py:
 
     clubs, contact_methods, languages, club_languages,
-    certifications, club_certifications, feedback_sources, club_feedback
+    certifications, club_certifications, feedback_sources,
+    club_feedback, diver_quotes
 
 Delimiter convention:
 - Comma-joined lists (languages_spoken, certifications) match the
   existing GROUP_CONCAT(..., ', ') format already used by
   v_club_dashboard and the frontend, so exporting requires no
   reformatting of values users already see in the app.
-- Semicolon-joined "key:value" pairs (contact_methods, feedback) since
-  those values are structured (type + value, or source + rating +
-  review_count + url) and commas can legitimately appear inside a URL
-  or phone number.
+- Semicolon-joined "key:value" pairs (contact_methods) since those
+  values are structured (type + value) and commas can legitimately
+  appear inside a URL or phone number.
+
+Feedback is NOT packed into clubs.csv (issue #17): authored summaries
+and diver quotes are prose, and prose cannot survive a colon/semicolon
+delimiter convention. It lives in a second file, data/feedback.csv,
+one row per feedback entry (see FEEDBACK_CSV_COLUMNS below).
 """
 
 # Column order in the CSV, matching clubs table columns first, then the
@@ -43,8 +48,41 @@ CSV_COLUMNS = [
     "languages_spoken",       # comma-joined, e.g. "English, Korean"
     "certifications",          # comma-joined, e.g. "PADI, NAUI"
     "contact_methods",         # semicolon-joined "type:value", e.g. "email:a@b.com;mobile_phone:+82-10-...;instagram:handle"
-    "feedback",                 # semicolon-joined "source:rating:review_count:url", rating/review_count/url optional
 ]
+
+# Column order for data/feedback.csv: one row per feedback entry.
+# Platform rows (kind=platform) carry rating/review_count/url/last_checked;
+# local-diver rows (kind=local_diver) carry author_alias/quoted_at and MUST
+# have a summary_or_quote. `kind` may be left blank and is derived from
+# `source` via SOURCE_KINDS; when filled it must agree.
+FEEDBACK_CSV_COLUMNS = [
+    "club_id",           # required; must match a club_id in clubs.csv
+    "source",             # required; one of SOURCE_KINDS keys
+    "kind",               # platform / local_diver; blank = derived from source
+    "rating",             # platform only; float 0..5
+    "review_count",       # platform only; integer >= 0
+    "url",                # platform only
+    "summary_or_quote",   # authored summary (platform, optional) or quote (local_diver, required)
+    "author_alias",       # local_diver only; anonymized, e.g. "instructor, 10y on Jeju"
+    "quoted_at",          # local_diver only; ISO date YYYY-MM-DD
+    "lang",               # BCP-47 tag of summary_or_quote, e.g. "ko", "en"
+    "last_checked",       # platform only; ISO date YYYY-MM-DD
+]
+
+FEEDBACK_KINDS = {"platform", "local_diver"}
+
+# Controlled source vocabulary -> kind. naver_blog and kakao_map stay
+# distinct (a blog write-up and a map review are different evidence;
+# provenance is the point). google reviews live on Google Maps, hence
+# google_maps for symmetry with kakao_map.
+SOURCE_KINDS = {
+    "naver_blog": "platform",
+    "kakao_map": "platform",
+    "google_maps": "platform",
+    "tripadvisor": "platform",
+    "reddit": "platform",
+    "local_diver": "local_diver",
+}
 
 REQUIRED_COLUMNS = ["name", "city"]
 

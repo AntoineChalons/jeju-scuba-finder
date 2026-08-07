@@ -3,8 +3,9 @@ Unit tests for tools/validate.py and tools/schema.py.
 
 Focused on the highest-risk pure functions in the data pipeline:
 boolean parsing (including the `active` blank-vs-invalid special case),
-contact_methods and feedback pack/unpack, and cross-row invariants
-(duplicate ids, duplicate name+city, partial GPS pairs).
+contact_methods pack/unpack, per-kind feedback.csv rules (issue #17),
+and cross-row invariants (duplicate ids, duplicate name+city, partial
+GPS pairs, duplicate platform feedback pairs).
 
 Run:   pytest tools/test_validate.py
 """
@@ -21,9 +22,10 @@ import validate  # noqa: E402
 from validate import (  # noqa: E402
     _parse_bool,
     parse_contact_methods,
-    parse_feedback,
     validate_and_normalize_row,
     validate_rows,
+    validate_feedback_row,
+    validate_feedback_rows,
     ValidationError,
 )
 
@@ -83,7 +85,6 @@ def _row(**overrides):
         "languages_spoken": "",
         "certifications": "",
         "contact_methods": "",
-        "feedback": "",
     }
     base.update(overrides)
     return base
@@ -198,54 +199,128 @@ class TestParseContactMethods:
         assert "bare handle" in errors[0]
 
 
-# ---------- feedback ---------------------------------------------------------
+# ---------- feedback.csv (issue #17) -----------------------------------------
 
 
-class TestParseFeedback:
-    def test_empty_returns_empty_list(self):
+def _fb_row(**overrides):
+    """A valid platform feedback.csv row; override fields per test."""
+    row = {
+        "club_id": "1",
+        "source": "tripadvisor",
+        "kind": "",
+        "rating": "4.5",
+        "review_count": "12",
+        "url": "https://www.tripadvisor.com/foo/bar",
+        "summary_or_quote": "",
+        "author_alias": "",
+        "quoted_at": "",
+        "lang": "",
+        "last_checked": "",
+    }
+    row.update(overrides)
+    return row
+
+
+class TestValidateFeedbackRow:
+    def test_valid_platform_row(self):
         errors = []
-        assert parse_feedback("", 2, errors) == []
-        assert parse_feedback(None, 2, errors) == []
-
-    def test_source_only(self):
-        errors = []
-        result = parse_feedback("Reddit", 2, errors)
-        assert result == [("Reddit", None, None, None)]
+        n = validate_feedback_row(_fb_row(), 2, errors)
         assert errors == []
+        assert n["club_id"] == 1
+        assert n["kind"] == "platform"  # derived from source
+        assert n["rating"] == 4.5
+        assert n["review_count"] == 12
 
-    def test_source_and_rating(self):
+    def test_valid_platform_row_with_summary_and_lang(self):
         errors = []
-        result = parse_feedback("TripAdvisor:4.5", 2, errors)
-        assert result == [("TripAdvisor", 4.5, None, None)]
-
-    def test_full_entry_with_url_containing_colons(self):
-        errors = []
-        result = parse_feedback(
-            "TripAdvisor:4.5:12:https://www.tripadvisor.com/foo/bar", 2, errors
+        n = validate_feedback_row(
+            _fb_row(summary_or_quote="Reviewers praise the boat dives.", lang="en", last_checked="2026-08-07"),
+            2, errors,
         )
-        assert result == [
-            ("TripAdvisor", 4.5, 12, "https://www.tripadvisor.com/foo/bar"),
-        ]
         assert errors == []
+        assert n["summary_or_quote"] == "Reviewers praise the boat dives."
+        assert n["lang"] == "en"
+        assert n["last_checked"] == "2026-08-07"
 
-    def test_multiple_sources(self):
+    def test_valid_local_diver_row(self):
         errors = []
-        result = parse_feedback("Reddit;TripAdvisor:4.5:12:https://x.com/y", 2, errors)
+        n = validate_feedback_row(
+            _fb_row(source="local_diver", rating="", review_count="", url="",
+                    summary_or_quote="Great briefings, small groups.",
+                    author_alias="instructor, 10y on Jeju", quoted_at="2026-08-05", lang="ko"),
+            2, errors,
+        )
+        assert errors == []
+        assert n["kind"] == "local_diver"
+        assert n["author_alias"] == "instructor, 10y on Jeju"
+
+    def test_kind_mismatch_with_source_is_rejected(self):
+        errors = []
+        validate_feedback_row(_fb_row(kind="local_diver"), 2, errors)
+        assert any("implies 'platform'" in e for e in errors)
+
+    def test_unknown_source_is_rejected(self):
+        errors = []
+        validate_feedback_row(_fb_row(source="yelp"), 2, errors)
+        assert any("'source' has invalid value 'yelp'" in e for e in errors)
+
+    def test_local_diver_without_quote_is_rejected(self):
+        errors = []
+        validate_feedback_row(
+            _fb_row(source="local_diver", rating="", review_count="", url=""),
+            2, errors,
+        )
+        assert any("requires 'summary_or_quote'" in e for e in errors)
+
+    def test_rating_on_local_diver_row_is_rejected(self):
+        errors = []
+        validate_feedback_row(
+            _fb_row(source="local_diver", rating="4.5", review_count="", url="",
+                    summary_or_quote="Nice club."),
+            2, errors,
+        )
+        assert any("'rating' does not apply to local_diver" in e for e in errors)
+
+    def test_author_alias_on_platform_row_is_rejected(self):
+        errors = []
+        validate_feedback_row(_fb_row(author_alias="someone"), 2, errors)
+        assert any("'author_alias' does not apply to platform" in e for e in errors)
+
+    def test_rating_out_of_range_is_rejected(self):
+        errors = []
+        validate_feedback_row(_fb_row(rating="5.5"), 2, errors)
+        assert any("out of range [0, 5]" in e for e in errors)
+
+    def test_bad_date_and_lang_are_rejected(self):
+        errors = []
+        validate_feedback_row(_fb_row(last_checked="07/08/2026", lang="korean!"), 2, errors)
+        assert any("invalid date" in e for e in errors)
+        assert any("invalid language tag" in e for e in errors)
+
+
+class TestValidateFeedbackRows:
+    def test_duplicate_platform_pair_is_rejected(self):
+        rows = [_fb_row(), _fb_row(rating="3")]
+        with pytest.raises(ValidationError) as exc:
+            validate_feedback_rows(rows)
+        assert any("duplicate platform feedback" in e for e in exc.value.errors)
+
+    def test_multiple_local_diver_rows_per_club_are_allowed(self):
+        rows = [
+            _fb_row(source="local_diver", rating="", review_count="", url="", summary_or_quote="Quote one."),
+            _fb_row(source="local_diver", rating="", review_count="", url="", summary_or_quote="Quote two."),
+        ]
+        result = validate_feedback_rows(rows)
         assert len(result) == 2
-        assert result[0][0] == "Reddit"
-        assert result[1] == ("TripAdvisor", 4.5, 12, "https://x.com/y")
 
-    def test_missing_source_reports_error(self):
-        errors = []
-        parse_feedback(":4.5", 2, errors)
-        assert len(errors) == 1
-        assert "missing a source name" in errors[0]
+    def test_unknown_club_id_is_rejected(self):
+        with pytest.raises(ValidationError) as exc:
+            validate_feedback_rows([_fb_row(club_id="99")], known_club_ids={1, 2})
+        assert any("does not match any club" in e for e in exc.value.errors)
 
-    def test_non_numeric_rating_reports_error(self):
-        errors = []
-        parse_feedback("TripAdvisor:great", 2, errors)
-        assert len(errors) == 1
-        assert "feedback.rating" in errors[0]
+    def test_known_club_id_passes(self):
+        result = validate_feedback_rows([_fb_row()], known_club_ids={1, 2})
+        assert result[0]["club_id"] == 1
 
 
 # ---------- cross-row invariants --------------------------------------------

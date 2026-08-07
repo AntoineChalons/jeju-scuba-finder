@@ -63,9 +63,17 @@ CREATE TABLE club_certifications (
 
 CREATE TABLE feedback_sources (
     source_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    source_name TEXT UNIQUE NOT NULL
+    source_name TEXT UNIQUE NOT NULL,
+    -- 'platform' (naver_blog, kakao_map, google_maps, tripadvisor, reddit)
+    -- or 'local_diver'. The UI groups feedback on this kind (issue #17).
+    source_kind TEXT NOT NULL DEFAULT 'platform'
+        CHECK (source_kind IN ('platform', 'local_diver'))
 );
 
+-- One row per (club, platform source): structured signals plus an authored
+-- per-source summary. Summaries stay per source rather than one blob per
+-- club so provenance survives ("Naver blogs praise the boat, Kakao reviews
+-- complain about crowding") and last_checked can flag staleness per origin.
 CREATE TABLE club_feedback (
     feedback_id INTEGER PRIMARY KEY AUTOINCREMENT,
     club_id INTEGER NOT NULL REFERENCES clubs(club_id) ON DELETE CASCADE,
@@ -73,8 +81,23 @@ CREATE TABLE club_feedback (
     rating REAL,
     review_count INTEGER,
     url TEXT,
+    summary TEXT,
+    lang TEXT,
     last_checked TEXT,
     UNIQUE(club_id, source_id)
+);
+
+-- First-hand feedback from local divers (issue #17). Deliberately NOT in
+-- club_feedback: several divers can comment on one club (no UNIQUE pair),
+-- and none of rating/review_count/url apply. author_alias is anonymized
+-- ("instructor, 10y on Jeju") -- nothing attributable ships without consent.
+CREATE TABLE diver_quotes (
+    quote_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    club_id INTEGER NOT NULL REFERENCES clubs(club_id) ON DELETE CASCADE,
+    quote TEXT NOT NULL,
+    author_alias TEXT,
+    quoted_at TEXT,
+    lang TEXT
 );
 
 CREATE VIEW v_club_dashboard AS
@@ -153,7 +176,9 @@ def get_or_create_certification(conn: sqlite3.Connection, name: str) -> int:
     return cur.lastrowid
 
 
-def get_or_create_feedback_source(conn: sqlite3.Connection, name: str) -> int:
+def get_or_create_feedback_source(
+    conn: sqlite3.Connection, name: str, kind: str = "platform"
+) -> int:
     name = name.strip()
     row = conn.execute(
         "SELECT source_id FROM feedback_sources WHERE source_name = ?", (name,)
@@ -161,6 +186,7 @@ def get_or_create_feedback_source(conn: sqlite3.Connection, name: str) -> int:
     if row:
         return row["source_id"]
     cur = conn.execute(
-        "INSERT INTO feedback_sources (source_name) VALUES (?)", (name,)
+        "INSERT INTO feedback_sources (source_name, source_kind) VALUES (?, ?)",
+        (name, kind),
     )
     return cur.lastrowid

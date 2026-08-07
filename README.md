@@ -36,7 +36,8 @@ repo-root/
 ├── public/              # Static assets copied as-is to dist/
 │   └── dive_clubs.db
 ├── data/
-│   └── clubs.csv        # Canonical CSV source of truth for dive_clubs.db
+│   ├── clubs.csv        # Canonical CSV source of truth for dive_clubs.db (one row = one club)
+│   └── feedback.csv     # Feedback entries: platform summaries + local-diver quotes (one row = one entry)
 ├── tools/               # Python CSV ↔ SQLite import/export/validation (stdlib only)
 │   ├── schema.py         # CSV column definitions and controlled-value sets
 │   ├── db.py             # SQLite schema DDL and connection helpers
@@ -187,9 +188,9 @@ Because `vite.config.js` sets `base: './'`, the built assets use relative paths 
 
 ## Data Import/Export Tooling
 
-Club data is maintained as a single canonical CSV file, `data/clubs.csv`, which is the source of truth for `public/dive_clubs.db`. The database itself is never hand-edited — it's always regenerated from the CSV, so a `git diff` on `data/clubs.csv` tells you exactly what changed in plain text instead of a binary SQLite diff.
+Club data is maintained as two canonical CSV files — `data/clubs.csv` (one row per club) and `data/feedback.csv` (one row per feedback entry) — which together are the source of truth for `public/dive_clubs.db`. The database itself is never hand-edited — it's always regenerated from the CSVs, so a `git diff` on the data files tells you exactly what changed in plain text instead of a binary SQLite diff.
 
-### CSV schema
+### CSV schema (`clubs.csv`)
 
 One row = one club. Most columns map 1:1 onto the `clubs` table. A few columns pack multiple normalized child rows into a single delimited cell so the whole dataset stays a flat, spreadsheet-friendly file:
 
@@ -206,23 +207,42 @@ One row = one club. Most columns map 1:1 onto the `clubs` table. A few columns p
 | `languages_spoken` | comma-joined language names | `English, Korean` |
 | `certifications` | comma-joined certification names | `PADI, NAUI` |
 | `contact_methods` | semicolon-joined `type:value` pairs; type is one of `email`, `whatsapp`, `kakaotalk`, `mobile_phone`, `instagram` (Instagram stored as bare handle, no `@`, no URL) | `email:a@b.com;mobile_phone:+82-10-1234-5678;instagram:jeju_dive_club` |
-| `feedback` | semicolon-joined `source:rating:review_count:url`; only `source` is required, trailing fields may be omitted | `TripAdvisor:4.5:12:https://...` or just `Reddit` |
 
-Languages, certifications, and feedback sources don't need to be predefined — any new name in the CSV is created automatically on import.
+Languages and certifications don't need to be predefined — any new name in the CSV is created automatically on import.
+
+### CSV schema (`feedback.csv`)
+
+Feedback lives in its own file because authored summaries and diver quotes are prose — prose can't survive the packed colon/semicolon cell convention used for structured values in `clubs.csv` (issue #17). One row = one feedback entry; a club can have any number of rows.
+
+| Column | Format | Example |
+| --- | --- | --- |
+| `club_id` | required; must match a `club_id` in `clubs.csv` | `5` |
+| `source` | required; one of `naver_blog`, `kakao_map`, `google_maps`, `tripadvisor`, `reddit`, `local_diver` | `naver_blog` |
+| `kind` | `platform` \| `local_diver`; may be left blank (derived from `source`), but must agree when filled | `platform` |
+| `rating` | platform only; 0–5 | `4.5` |
+| `review_count` | platform only; integer ≥ 0 | `12` |
+| `url` | platform only | `https://blog.naver.com/...` |
+| `summary_or_quote` | authored summary (platform, optional) or the diver's quote (local_diver, **required**) | `Reviewers praise the boat dives.` |
+| `author_alias` | local_diver only; anonymized | `instructor, 10y on Jeju` |
+| `quoted_at` | local_diver only; `YYYY-MM-DD` | `2026-08-05` |
+| `lang` | BCP-47 tag of the text | `ko` |
+| `last_checked` | platform only; `YYYY-MM-DD`, flags stale summaries | `2026-08-07` |
+
+Per-kind rules are enforced by validation: a `rating` on a `local_diver` row is an error, a `local_diver` row without a quote is an error, and duplicate (`club_id`, `source`) pairs are rejected for platform rows (one summary per club per source — provenance stays per origin). Multiple `local_diver` rows per club are expected. `author_alias` is deliberately anonymized: nothing attributable to a named person ships without their consent.
 
 ### Workflow
 
 **Editing existing clubs or adding new ones:**
 
-1. Open `data/clubs.csv` in a spreadsheet application or text editor.
-2. Edit existing rows in place (keep their `club_id`), or add a new row with `club_id` left blank.
+1. Open `data/clubs.csv` (or `data/feedback.csv`) in a spreadsheet application or text editor.
+2. Edit existing rows in place (keep their `club_id`), or add a new row with `club_id` left blank. Feedback rows can only reference clubs that already have a `club_id`.
 3. Regenerate the database:
    ```bash
    python3 tools/import_csv.py data/clubs.csv public/dive_clubs.db
    ```
-   This validates every row first and prints a clear error report if anything is malformed — it will not touch the database until the whole file passes. The database is always rebuilt from scratch from the CSV, so removing a row from the CSV removes that club from the database too.
+   This picks up `data/feedback.csv` automatically (override with `--feedback-csv`, or skip deliberately with `--no-feedback`), validates every row in both files first, and prints a clear error report if anything is malformed — it will not touch the database until everything passes. The database is always rebuilt from scratch from the CSVs, so removing a row removes it from the database too.
 4. Run `npm run build` (or `npm run preview`) locally to confirm the dashboard still loads correctly.
-5. Commit both `data/clubs.csv` and `public/dive_clubs.db`, then push — GitHub Pages redeploys automatically via the Actions workflow.
+5. Commit `data/clubs.csv`, `data/feedback.csv`, and `public/dive_clubs.db`, then push — GitHub Pages redeploys automatically via the Actions workflow.
 
 **Exporting the current database back to CSV** (e.g. after a manual SQLite edit, or to hand the file to someone else for review):
 
@@ -230,15 +250,17 @@ Languages, certifications, and feedback sources don't need to be predefined — 
 python3 tools/export_csv.py public/dive_clubs.db data/clubs.csv
 ```
 
+This writes both files (`data/feedback.csv` lands next to the clubs CSV; override with `--feedback-csv`).
+
 **Validating a CSV without writing a database:**
 
 ```bash
-python3 tools/validate.py data/clubs.csv
+python3 tools/validate.py data/clubs.csv          # also checks data/feedback.csv when present
 # or, equivalently:
 python3 tools/import_csv.py data/clubs.csv public/dive_clubs.db --dry-run
 ```
 
-Both commands report every validation issue in the file (missing required fields, out-of-range GPS coordinates, invalid `size`/boolean values, malformed `contact_methods`/`feedback` entries, duplicate `club_id`s, and duplicate name+city pairs) rather than stopping at the first one.
+Both commands report every validation issue in both files (missing required fields, out-of-range GPS coordinates, invalid `size`/boolean values, malformed `contact_methods` entries, duplicate `club_id`s, duplicate name+city pairs, unknown feedback sources, per-kind feedback violations, and feedback rows pointing at nonexistent clubs) rather than stopping at the first one.
 
 The tooling in `tools/` (`schema.py`, `db.py`, `validate.py`, `import_csv.py`, `export_csv.py`) has no dependencies beyond the Python 3 standard library.
 
@@ -262,7 +284,7 @@ The tooling in `tools/` (`schema.py`, `db.py`, `validate.py`, `import_csv.py`, `
 - ~~Introduce a central state container as filters/drawer land.~~ Done — see [State Management](#state-management).
 - ~~Make the UI fully multi-lingual with auto-detected language.~~ Done — see [Internationalization](#internationalization).
 - Add map links and address grouping by city or area.
-- Add a club detail drawer with feedback summaries.
+- Add a club detail drawer with feedback summaries — schema and pipeline are in place (per-source platform summaries in `club_feedback.summary`, local-diver quotes in `diver_quotes`); the drawer UI is the remaining piece ([#17](https://github.com/AntoineChalons/jeju-scuba-finder/issues/17)).
 - ~~Add import/export tooling for CSV and SQLite regeneration.~~ Done — see [Data Import/Export Tooling](#data-importexport-tooling).
 - ~~Add automated data validation for required fields.~~ Done — covered by the same tooling; `tools/validate.py` checks required fields, controlled values, GPS ranges, and duplicates.
 - ~~Switch to `sql.js-httpvfs` with chunked loading once the database grows.~~ **Cancelled** — expected scale is at most ~80 clubs, keeping `dive_clubs.db` in the tens/low hundreds of KB (currently 68 KB for 4 clubs), well under the 660 KB sql.js WASM binary already shipped. Chunked HTTP-range loading solves multi-hundred-MB files; at this size it would add real complexity (custom VFS, worker coordination, cache-control tuning) for no measurable benefit. Revisit only if the schema changes to store large blobs (e.g. inline photos) or club count grows by an order of magnitude.
