@@ -160,7 +160,7 @@ pytest tools/     # Data-pipeline unit tests (validate, schema)
 
 All three run on every pull request via `.github/workflows/ci.yml`, and again on push to `main` before deploy via `.github/workflows/deploy.yml`. Any failure blocks the deploy.
 
-Test scope is deliberately narrow: the pure-logic and pure-data layers are covered, DOM controllers (map, table, drawer) are still verified by the browser walkthrough on each PR. See issue #20 for the deferred JSDoc + DOM test work.
+Test scope is deliberately narrow: the pure-logic and pure-data layers are covered (filters, state, feedback grouping/staleness, translation key parity across locales), DOM controllers (map, table, drawer) are still verified by the browser walkthrough on each PR. See issue #20 for the deferred JSDoc + DOM test work.
 
 ## How It Works
 
@@ -284,7 +284,7 @@ The tooling in `tools/` (`schema.py`, `db.py`, `validate.py`, `import_csv.py`, `
 - ~~Introduce a central state container as filters/drawer land.~~ Done — see [State Management](#state-management).
 - ~~Make the UI fully multi-lingual with auto-detected language.~~ Done — see [Internationalization](#internationalization).
 - Add map links and address grouping by city or area.
-- Add a club detail drawer with feedback summaries — schema and pipeline are in place (per-source platform summaries in `club_feedback.summary`, local-diver quotes in `diver_quotes`); the drawer UI is the remaining piece ([#17](https://github.com/AntoineChalons/jeju-scuba-finder/issues/17)).
+- ~~Add a club detail drawer with feedback summaries.~~ Done — the drawer shows two conditional sections ([#17](https://github.com/AntoineChalons/jeju-scuba-finder/issues/17)): “Platform reviews” (per-source rating, review count, link, optional authored summary, `last_checked` date with a “may be outdated” badge after 180 days) and “From local divers” (anonymized quotes, newest first). Each section renders only when populated; feedback text renders in its authored language with a `lang` attribute.
 - ~~Add import/export tooling for CSV and SQLite regeneration.~~ Done — see [Data Import/Export Tooling](#data-importexport-tooling).
 - ~~Add automated data validation for required fields.~~ Done — covered by the same tooling; `tools/validate.py` checks required fields, controlled values, GPS ranges, and duplicates.
 - ~~Switch to `sql.js-httpvfs` with chunked loading once the database grows.~~ **Cancelled** — expected scale is at most ~80 clubs, keeping `dive_clubs.db` in the tens/low hundreds of KB (currently 68 KB for 4 clubs), well under the 660 KB sql.js WASM binary already shipped. Chunked HTTP-range loading solves multi-hundred-MB files; at this size it would add real complexity (custom VFS, worker coordination, cache-control tuning) for no measurable benefit. Revisit only if the schema changes to store large blobs (e.g. inline photos) or club count grows by an order of magnitude.
