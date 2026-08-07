@@ -1,4 +1,5 @@
 import { t } from './i18n/i18n.js';
+import { isStale } from './feedback.js';
 
 /**
  * Club detail drawer (issue #2).
@@ -22,6 +23,20 @@ const CONTACT_META = {
   whatsapp: { icon: '\u{1F4AC}', labelKey: 'contactWhatsapp', href: v => `https://wa.me/${v.replace(/[^\d]/g, '')}` },
   kakaotalk: { icon: '\u{1F4AD}', labelKey: 'contactKakaotalk', href: v => (/^https?:\/\//.test(v) ? v : null) },
   instagram: { icon: '\u{1F4F7}', labelKey: 'contactInstagram', href: v => `https://instagram.com/${v.replace(/^@/, '')}` }
+};
+
+/**
+ * Display names for feedback platforms. Sources are a controlled vocabulary
+ * (tools/schema.py SOURCE_KINDS), so an unknown name here means the schema
+ * gained a source the UI doesn't know yet — fall back to the raw name
+ * rather than hiding the row.
+ */
+const SOURCE_LABEL_KEYS = {
+  naver_blog: 'sourceNaverBlog',
+  kakao_map: 'sourceKakaoMap',
+  google_maps: 'sourceGoogleMaps',
+  tripadvisor: 'sourceTripadvisor',
+  reddit: 'sourceReddit'
 };
 
 const MODAL_BREAKPOINT = '(max-width: 899px)';
@@ -105,6 +120,84 @@ function contactsHtml(club) {
   return `<ul class="contact-list">${items}</ul>`;
 }
 
+/** lang="…" attribute when the entry declares its language (BCP-47). */
+function langAttr(lang) {
+  return lang ? ` lang="${esc(lang)}"` : '';
+}
+
+function platformItemHtml(fb) {
+  const labelKey = SOURCE_LABEL_KEYS[fb.source];
+  const label = esc(labelKey ? t('drawer.' + labelKey) : fb.source);
+  const name = fb.url
+    ? `<a href="${esc(fb.url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+    : label;
+
+  const meta = [];
+  if (fb.rating !== null && fb.rating !== undefined) {
+    meta.push(`<span class="feedback-rating">\u2605 ${esc(fb.rating)}</span>`);
+  }
+  if (fb.review_count !== null && fb.review_count !== undefined) {
+    meta.push(`<span>${esc(t('drawer.feedbackReviews', { count: fb.review_count }))}</span>`);
+  }
+  if (fb.last_checked) {
+    meta.push(`<span>${esc(t('drawer.feedbackChecked', { date: fb.last_checked }))}</span>`);
+  }
+  if (isStale(fb.last_checked)) {
+    meta.push(`<span class="feedback-stale">${esc(t('drawer.feedbackStale'))}</span>`);
+  }
+
+  const summary = fb.summary
+    ? `<p class="feedback-summary"${langAttr(fb.lang)}>${esc(fb.summary)}</p>`
+    : '';
+
+  return `<li class="feedback-item">
+      <div class="feedback-head">
+        <span class="feedback-source">${name}</span>
+        ${meta.length ? `<span class="feedback-meta">${meta.join(' \u00b7 ')}</span>` : ''}
+      </div>
+      ${summary}
+    </li>`;
+}
+
+function quoteItemHtml(q) {
+  const attribution = [q.author_alias, q.quoted_at].filter(Boolean).map(esc).join(' \u00b7 ');
+  return `<li class="feedback-item">
+      <blockquote class="diver-quote"${langAttr(q.lang)}>${esc(q.quote)}</blockquote>
+      ${attribution ? `<footer class="quote-attribution">\u2014 ${attribution}</footer>` : ''}
+    </li>`;
+}
+
+/**
+ * Feedback sections (issue #17): "Platform reviews" and "From local
+ * divers", each rendered only when it has content — sections rather than a
+ * source toggle, because only a couple of clubs have local quotes and an
+ * empty toggle state reads as a bug. Falls back to the pre-#17 placeholder
+ * text when the club has no feedback at all.
+ */
+function feedbackHtml(club) {
+  const fb = club.feedback;
+  const sections = [];
+  if (fb && fb.platform.length) {
+    sections.push(`<section class="drawer-section">
+        <h3>${esc(t('drawer.sectionFeedbackPlatform'))}</h3>
+        <ul class="feedback-list">${fb.platform.map(platformItemHtml).join('')}</ul>
+      </section>`);
+  }
+  if (fb && fb.quotes.length) {
+    sections.push(`<section class="drawer-section">
+        <h3>${esc(t('drawer.sectionFeedbackLocal'))}</h3>
+        <ul class="feedback-list">${fb.quotes.map(quoteItemHtml).join('')}</ul>
+      </section>`);
+  }
+  if (!sections.length) {
+    return `<section class="drawer-section">
+        <h3>${esc(t('drawer.sectionFeedback'))}</h3>
+        <p class="drawer-empty">${esc(t('drawer.feedbackPending'))}</p>
+      </section>`;
+  }
+  return sections.join('');
+}
+
 function bodyHtml(club) {
   const price = club.estimated_price_per_dive_krw
     ? esc(club.estimated_price_per_dive_krw.toLocaleString()) + ' KRW'
@@ -132,12 +225,7 @@ function bodyHtml(club) {
       <h3>${esc(t('drawer.sectionContact'))}</h3>
       ${contactsHtml(club)}
     </section>
-    <section class="drawer-section">
-      <h3>${esc(t('drawer.sectionFeedback'))}</h3>
-      <!-- Deliberately empty: there is no free-text notes field to
-           summarize yet. Tracked in issue #17. -->
-      <p class="drawer-empty" id="drawer-feedback-placeholder">${esc(t('drawer.feedbackPending'))}</p>
-    </section>
+    ${feedbackHtml(club)}
   `;
 }
 

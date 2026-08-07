@@ -312,6 +312,43 @@ a{color:#7fd8f5;}
   color:var(--text-muted);
   font-style:italic;
 }
+/* Feedback sections (issue #17) */
+.feedback-list{list-style:none;margin:0;padding:0;}
+.feedback-item{
+  padding:8px 0;
+  border-bottom:1px solid rgba(35,68,68,.5);
+  font-size:13px;
+}
+.feedback-item:last-child{border-bottom:none;}
+.feedback-head{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px 10px;
+  align-items:baseline;
+  justify-content:space-between;
+}
+.feedback-source{font-weight:600;}
+.feedback-meta{color:var(--text-muted);font-size:12px;}
+.feedback-rating{color:var(--accent);}
+.feedback-stale{
+  color:#e8b34b;
+  border:1px solid rgba(232,179,75,.45);
+  border-radius:4px;
+  padding:0 5px;
+}
+.feedback-summary{margin:6px 0 0;overflow-wrap:anywhere;}
+.diver-quote{
+  margin:0;
+  padding:2px 0 2px 10px;
+  border-left:3px solid var(--accent);
+  overflow-wrap:anywhere;
+}
+.quote-attribution{
+  margin-top:4px;
+  color:var(--text-muted);
+  font-size:12px;
+  text-align:right;
+}
 .contact-list{list-style:none;margin:0;padding:0;}
 .contact-item{
   display:flex;
