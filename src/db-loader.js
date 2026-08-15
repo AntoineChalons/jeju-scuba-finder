@@ -2,6 +2,9 @@ import initSqlJs from 'sql.js';
 import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { groupFeedback } from './feedback.js';
 
+const DEFAULT_DATABASE_URL =
+  'https://antoinechalons.github.io/public-data/dive_clubs.db';
+
 function rows(db, sql) {
   const res = db.exec(sql);
   if (!res.length) return [];
@@ -13,11 +16,18 @@ function rows(db, sql) {
   });
 }
 
-export async function loadClubsFromDb(dbPath = 'dive_clubs.db') {
+export function getDatabaseUrl() {
+  return import.meta.env.VITE_DATABASE_URL || DEFAULT_DATABASE_URL;
+}
+
+export async function loadClubsFromDb(dbPath = getDatabaseUrl()) {
   const SQL = await initSqlJs({
     locateFile: () => sqlWasmUrl
   });
-  const resp = await fetch(dbPath);
+  const resp = await fetch(dbPath, { cache: 'no-store' });
+  if (!resp.ok) {
+    throw new Error(`Cannot load database: HTTP ${resp.status}`);
+  }
   const buf = await resp.arrayBuffer();
   const db = new SQL.Database(new Uint8Array(buf));
   // Clubs believed to be out of business are kept in the database (so their
@@ -43,5 +53,6 @@ export async function loadClubsFromDb(dbPath = 'dive_clubs.db') {
   for (const club of clubs) {
     club.feedback = feedbackByClub.get(club.club_id) || null;
   }
+  db.close();
   return clubs;
 }

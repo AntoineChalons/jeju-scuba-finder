@@ -1,7 +1,7 @@
 /**
  * Pure feedback logic for the club drawer (issue #17).
  *
- * The database stores two kinds of feedback (see tools/db.py):
+ * The published database stores two kinds of feedback:
  * - `club_feedback` — at most one row per (club, platform source): rating,
  *   review count, url, optional authored summary, `last_checked` date.
  * - `diver_quotes` — free-form quotes from trusted local divers, several

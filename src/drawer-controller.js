@@ -27,9 +27,8 @@ const CONTACT_META = {
 
 /**
  * Display names for feedback platforms. Sources are a controlled vocabulary
- * (tools/schema.py SOURCE_KINDS), so an unknown name here means the schema
- * gained a source the UI doesn't know yet — fall back to the raw name
- * rather than hiding the row.
+ * in the private data repository. An unknown name here means the schema gained
+ * a source the UI does not know yet, so use the raw name instead of hiding it.
  */
 const SOURCE_LABEL_KEYS = {
   naver_blog: 'sourceNaverBlog',
@@ -79,10 +78,10 @@ function linkValue(url, labelKey) {
 }
 
 /**
- * `contact_methods` arrives from v_club_dashboard packed with the same
- * delimiters the CSV uses (see tools/schema.py): ";" between entries and
- * ":" between type and value. The value itself can contain ":" (a kakaotalk
- * chat URL, for instance), so only the first ":" is a separator.
+ * `contact_methods` arrives from v_club_dashboard packed with the source-data
+ * delimiters: ";" between entries and ":" between type and value. The value
+ * itself can contain ":" (a Kakaotalk chat URL, for instance), so only the
+ * first ":" is a separator.
  */
 function parseContacts(packed) {
   if (!packed) return [];

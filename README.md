@@ -1,332 +1,184 @@
 # Jeju Scuba-diving Club Finder
 
-A static, browser-based dashboard for comparing Jeju scuba diving clubs from a normalized SQLite database. The app is designed to help users compare operators such as MJ, Nautilus, Sealife, and BigBlue33 by contact methods, certifications, language support, boat access, pricing, and feedback sources.
+A static, browser-based dashboard for comparing scuba diving clubs on Jeju
+Island.
 
 ## Features
 
-- Sortable comparison table for Jeju dive clubs.
-- Filter bar for certification, size, language, and max price per dive.
-- SQLite-backed data model with normalized tables for clubs, contacts, languages, certifications, and feedback.
-- Fully multi-lingual UI (English, Chinese, Japanese, Korean) with automatic browser-language detection and a persistent language switcher.
-- Client-side dashboard that runs entirely in the browser.
-- GitHub Pages compatible deployment with no backend required.
-- Read-only database access from a static `.db` file.
-- Extensible schema for adding more clubs, languages, certifications, and review sources.
+- Sortable club comparison table.
+- Filters for certification, club size, language, price, boat ownership,
+  technical diving, and freediving.
+- Interactive MapLibre map.
+- Club detail drawer with contacts and feedback.
+- English, Chinese, Japanese, and Korean UI.
+- Client-side SQLite queries through sql.js.
+- Static GitHub Pages deployment with no application server.
 
-## Project Structure
+## Data architecture
+
+The project uses three repositories:
+
+| Repository | Visibility | Purpose |
+|---|---|---|
+| `AntoineChalons/jeju-scuba-finder` | Public | Static Vite application and UI tests |
+| `AntoineChalons/jeju-scuba-data` | Private | Source CSV files, research report, validation, tests, and SQLite tools |
+| [`AntoineChalons/public-data`](https://github.com/AntoineChalons/public-data) | Public | Generated `dive_clubs.db` artifact |
+
+The CSV files in the private data repository are the source of truth. A GitHub
+Actions workflow validates them, builds `dive_clubs.db`, checks its integrity,
+and publishes only the database to `public-data`.
+
+The production app loads:
 
 ```text
-repo-root/
-├── index.html          # Vite entry HTML
-├── package.json
-├── vite.config.js
-├── src/                 # Application source (bundled by Vite)
-│   ├── main.js
-│   ├── state.js          # Centralized state container (single store + subscribe)
-│   ├── filters.js         # Pure filter-option derivation and filter-apply logic
-│   ├── filter-bar.js       # Filter bar DOM rendering and event wiring
-│   ├── db-loader.js
-│   ├── db-diagnostics.js
-│   ├── map-controller.js
-│   ├── table-controller.js
-│   └── i18n/
-│       ├── translations.js       # en/zh/ja/ko dictionaries
-│       ├── i18n.js               # detection, persistence, t() lookup
-│       └── language-switcher.js  # top-right language switcher UI
-├── public/              # Static assets copied as-is to dist/
-│   └── dive_clubs.db
-├── data/
-│   ├── clubs.csv        # Canonical CSV source of truth for dive_clubs.db (one row = one club)
-│   └── feedback.csv     # Feedback entries: platform summaries + local-diver quotes (one row = one entry)
-├── tools/               # Python CSV ↔ SQLite import/export/validation (stdlib only)
-│   ├── schema.py         # CSV column definitions and controlled-value sets
-│   ├── db.py             # SQLite schema DDL and connection helpers
-│   ├── validate.py       # Row/file validation shared by import and standalone use
-│   ├── import_csv.py     # CSV -> fresh SQLite database
-│   └── export_csv.py     # SQLite -> canonical CSV
-├── README.md
-└── .gitignore
+https://antoinechalons.github.io/public-data/dive_clubs.db
 ```
 
-## Technology Stack
+Do not add source CSV files, research reports, Python data tools, or generated
+database files to this repository.
 
-- HTML, CSS, and JavaScript, bundled with [Vite](https://vitejs.dev/).
-- npm-managed dependencies: `leaflet` and `sql.js` (no CDN `<script>` tags).
-- SQLite for the source data store.
-- sql.js for browser-side SQLite querying, loaded via its WebAssembly build.
-- GitHub Pages for static hosting.
+## Project structure
 
-## State Management
+```text
+.
+├── .github/workflows/
+│   ├── ci.yml
+│   └── deploy.yml
+├── public/
+│   └── favicon.svg
+├── src/
+│   ├── db-diagnostics.js
+│   ├── db-loader.js
+│   ├── drawer-controller.js
+│   ├── feedback.js
+│   ├── filter-bar.js
+│   ├── filters.js
+│   ├── main.js
+│   ├── map-controller.js
+│   ├── state.js
+│   ├── table-controller.js
+│   └── i18n/
+├── index.html
+├── package.json
+├── vite.config.js
+└── README.md
+```
 
-The app uses a small, explicit state container instead of scattered module-level globals (`src/state.js`):
+## Runtime data flow
 
-- A single `state` object holds `clubs`, `sortKey`, `sortAsc`, `selectedClubId`, and `filters`.
-- `setState(patch)` merges a partial update and notifies every subscriber; `setFilter(key, value)` is a convenience wrapper for updating one filter field immutably.
-- `subscribe(fn)` registers a callback invoked after every state change. `main.js` registers exactly one subscriber — a `render(state)` function — so the table, map, and filter bar always stay in sync and re-render in a single, predictable pass instead of being manually called in the right order after each event handler.
+```text
+private clubs.csv and feedback.csv
+  -> validation and SQLite build
+  -> public-data/dive_clubs.db
+  -> src/db-loader.js
+  -> application state
+  -> filters, table, map, and detail drawer
+```
 
-This keeps new features (the filter bar, and future additions like a detail drawer or URL-synced state) additive: they read from `getState()` and write via `setState()`/`setFilter()` without threading extra parameters through every render call.
+`src/db-loader.js` downloads the complete database, opens it with sql.js, and
+queries `v_club_dashboard`. It also loads platform feedback and local-diver
+quotes for the detail drawer.
 
-The `locale` field follows the same pattern: it lives in `state`, is set via `setState({ locale })`, and every render function reads the active language through the `t()` translation lookup rather than being passed a language parameter directly.
+The database URL can be changed at build time with `VITE_DATABASE_URL`.
 
-## Filtering
+## Data model
 
-The filter bar (certification, size, language, max price per dive) is built from three small, focused modules:
+The normalized SQLite schema is maintained in the private data repository:
 
-- `src/filters.js` — pure functions with no DOM access: `buildFilterOptions(clubs)` derives the distinct dropdown values from the loaded dataset, and `applyFilters(clubs, filters)` returns the subset matching all active filters (AND logic across fields). Certification and language are comma-joined text fields in the database, so filtering matches against the split list rather than doing a substring match.
-- `src/filter-bar.js` — renders the `<select>`/`<input>` options, keeps the controls in sync with state, and wires user interaction to a single `onChange(key, value)` callback. It has no dependency on the state store itself, so it stays easy to reuse or test in isolation.
-- `main.js` wires it together: filter changes call `setFilter()`, the state subscriber recomputes `applyFilters()` then `sortClubs()` on every change, and the result feeds both the table and the map. A club missing `estimated_price_per_dive_krw` is excluded once a max-price filter is active, since it can't be confirmed to satisfy the constraint.
+- `clubs`: core club profiles and active status.
+- `contact_methods`: contact channels for each club.
+- `languages` and `club_languages`: supported languages.
+- `certifications` and `club_certifications`: supported certifications.
+- `feedback_sources` and `club_feedback`: platform feedback.
+- `diver_quotes`: local-diver feedback.
+- `v_club_dashboard`: flattened read model for the app.
 
-## Internationalization
+Club data is intentionally not translated. The multilingual files translate UI
+labels and application messages only.
 
-The entire UI — page title, subtitle, filter bar, table headers, Yes/No badges, link text, map popups, status/diagnostic banner, and footer — is translated into English (`en`), Chinese (`zh`), Japanese (`ja`), and Korean (`ko`).
+## Inactive clubs
 
-- **`src/i18n/translations.js`** — a flat dictionary per locale (`translations.en`, `translations.zh`, ...), keyed by dotted paths (e.g. `filters.reset`, `table.name`). All four dictionaries are kept structurally identical; a Node script check during development confirms no locale is missing a key before shipping.
-- **`src/i18n/i18n.js`** — the core lookup/detection module:
-  - `t(key, vars)` resolves a dotted key against the active locale, falls back to English for any missing key, and supports `{placeholder}` interpolation (e.g. `t('filters.showingFiltered', { filtered, total })`).
-  - `detectBrowserLocale()` reads `navigator.languages`/`navigator.language` and maps the first supported match (`zh-*` → `zh`, `ja-*` → `ja`, `ko-*` → `ko`, everything else → `en`) — this is the "detect where the user is from" behavior, driven by the browser/OS locale rather than IP geolocation, so it works offline and requires no extra permissions.
-  - `getInitialLocale()` checks `localStorage` for a previously saved manual choice first, and only falls back to `detectBrowserLocale()` if none is stored.
-  - `setLocale()` / `persistLocale()` save the active locale to `localStorage` (`jeju-dive-club-locale`) so a manual choice survives a page reload.
-- **`src/i18n/language-switcher.js`** — renders the language switcher: a compact button in the top-right corner showing a small inline-SVG flag plus the active language's short label, which opens a dropdown with all four languages (each with its own flag). Flags are inline SVG rather than raster images — crisp at any size, no extra network requests, no licensing concerns. Selecting an option calls back into `main.js`, which updates state and re-renders every translated string.
-- **`main.js`** wires it together: `getInitialLocale()` runs once on startup before the first render; `renderStaticText(state)` applies every locale-dependent label (title, headers, filter labels, footer, switcher) and is re-run whenever the locale changes; the regular `render(state)` pipeline (table/map/filter sync) is locale-agnostic since it only touches data already rendered by `renderStaticText`.
+Inactive clubs remain in the database so IDs, URLs, and the research trail stay
+stable. The frontend loads only rows where `active = 1`, so inactive clubs do
+not appear in the map, table, filters, or result counts.
 
-Club **data** itself (names, cities, raw certification/language values pulled from the database) is intentionally left untranslated — only UI chrome and labels are localized.
+Inactive-club evidence and decisions belong in
+`data/jeju_club_research_report.md` in the private data repository.
 
-## Data Model
+## Local development
 
-The database uses a normalized schema so the project can grow without becoming a wide, fragile spreadsheet:
+### Requirements
 
-- `clubs`: core club profile data.
-- `contact_methods`: one row per contact channel.
-- `languages` and `club_languages`: many-to-many language support.
-- `certifications` and `club_certifications`: many-to-many certification support.
-- `feedback_sources` and `club_feedback`: ratings and review metadata per platform.
-- `v_club_dashboard`: a view that flattens the schema for the frontend dashboard, including `contact_methods` and `feedback` packed with the same delimiters the CSV uses.
-
-### Inactive clubs
-
-`clubs.active` records whether a club is believed to still be trading. Clubs that close are **not deleted**: keeping the row preserves stable `club_id`s, avoids breaking any URL that references them, and keeps the research trail in `data/jeju_club_research_report.md` intact. The frontend simply never loads them (`WHERE active = 1` in `src/db-loader.js`), so they are absent from the map, the table, the filter dropdowns and the result counts alike.
-
-A club is marked inactive only when **both** signals fail:
-
-1. no dated content of any kind (customer review, third-party blog post, or the shop's own posting) since January 2024, and
-2. a failed business-presence check — a dead or unreachable website, or no current map place record.
-
-Review silence alone is not enough. Sea Sky Jeju, for instance, has no independent star rating since 2022 but posts to its own blog as recently as July 2026, so it stays active.
-
-## Local Development
-
-### Prerequisites
-
-- Node.js 18+ and npm.
+- Node.js 24 or later.
+- npm.
 - A modern browser.
 
-### Setup
+### Install and run
 
 ```bash
 npm install
-```
-
-### Run the dev server
-
-```bash
 npm run dev
 ```
 
-Vite prints a local URL (typically `http://localhost:5173`). Open it in a browser — hot module reload is enabled, so edits to files in `src/` refresh automatically.
+The local app uses the published database by default.
 
-Do not open `index.html` directly with `file://`; browser fetch behavior blocks access to the SQLite file. Always go through the Vite dev server or a build preview.
-
-### Build for production
+To test a locally built database, start a static server in the private data
+repository and set the build-time URL:
 
 ```bash
+VITE_DATABASE_URL=http://localhost:8001/dive_clubs.db npm run dev
+```
+
+The database server must allow cross-origin requests.
+
+### Quality checks
+
+```bash
+npm run lint
+npm test
 npm run build
 ```
 
-This bundles `src/` into `dist/`, copies everything in `public/` (including `dive_clubs.db`) alongside it, and hashes asset filenames for cache-busting.
+The public application CI runs these checks for pull requests. The private data
+repository runs Python tests and data validation independently.
 
-### Preview the production build locally
+## Update club data
 
-```bash
-npm run preview
-```
+Data changes belong in the private `jeju-scuba-data` repository.
 
-### Lint and test
+1. Edit `data/clubs.csv` for club profiles and capabilities.
+2. Edit `data/feedback.csv` for platform summaries or local-diver quotes.
+3. Update `data/jeju_club_research_report.md` when research decisions change.
+4. Run the validation and tests documented in that repository.
+5. Commit and push to `main`.
+6. Confirm that the `Publish scuba database` workflow succeeds.
+7. Confirm that `public-data/dive_clubs.db` was updated.
 
-```bash
-npm run lint      # ESLint on all JS
-npm test          # Vitest, pure-logic unit tests (filters, state)
-pytest tools/     # Data-pipeline unit tests (validate, schema)
-```
+Do not edit `dive_clubs.db` directly. The next publication run will replace it.
 
-All three run on every pull request via `.github/workflows/ci.yml`, and again on push to `main` before deploy via `.github/workflows/deploy.yml`. Any failure blocks the deploy.
+## Application deployment
 
-Test scope is deliberately narrow: the pure-logic and pure-data layers are covered (filters, state, feedback grouping/staleness, translation key parity across locales), DOM controllers (map, table, drawer) are still verified by the browser walkthrough on each PR. See issue #20 for the deferred JSDoc + DOM test work.
+Pushes to `main` run:
 
-## How It Works
+1. ESLint.
+2. JavaScript unit tests.
+3. The Vite production build.
+4. GitHub Pages deployment.
 
-The frontend fetches `dive_clubs.db` (served from `public/` at build time) in the browser, opens it with sql.js's WebAssembly build, and queries the `v_club_dashboard` view. The resulting rows are rendered into a sortable HTML table, so the dashboard works without a backend API.
+The application deployment does not build or publish club data. The private
+data workflow owns that responsibility.
 
-The current implementation is read-only in the browser. Updates happen by editing `data/clubs.csv` and regenerating `public/dive_clubs.db` with the tooling in `tools/` (see [Data Import/Export Tooling](#data-importexport-tooling)), then committing both files back to the repository.
+## Failure behavior
 
-## Deployment to GitHub Pages
-
-This project now uses a build step, so GitHub Pages must serve the built `dist/` output rather than the repository root.
-
-**Recommended: GitHub Actions (build + deploy on every push)**
-
-1. In GitHub, open **Settings → Pages**.
-2. Under **Build and deployment**, choose **GitHub Actions**.
-3. Add a workflow that runs `npm ci`, `npm run build`, and publishes `dist/` using `actions/upload-pages-artifact` + `actions/deploy-pages`.
-4. Push to `main` — GitHub Pages rebuilds and redeploys automatically.
-
-**Alternative: manual `dist/` deploy**
-
-1. Run `npm run build` locally.
-2. Publish the contents of `dist/` to a `gh-pages` branch (e.g. with the `gh-pages` npm package) or configure Pages to deploy from that branch/folder.
-
-Because `vite.config.js` sets `base: './'`, the built assets use relative paths and work correctly from a GitHub Pages project URL subpath.
-
-## Data Import/Export Tooling
-
-Club data is maintained as two canonical CSV files — `data/clubs.csv` (one row per club) and `data/feedback.csv` (one row per feedback entry) — which together are the source of truth for `public/dive_clubs.db`. The database itself is never hand-edited — it's always regenerated from the CSVs, so a `git diff` on the data files tells you exactly what changed in plain text instead of a binary SQLite diff.
-
-### CSV schema (`clubs.csv`)
-
-One row = one club. Most columns map 1:1 onto the `clubs` table. A few columns pack multiple normalized child rows into a single delimited cell so the whole dataset stays a flat, spreadsheet-friendly file:
-
-| Column | Format | Example |
-| --- | --- | --- |
-| `club_id` | integer, blank for a new club | `1` or empty |
-| `name`, `city` | required text | `MJ Jeju Diving Club` |
-| `full_address`, `website_url`, `naver_map_url` | optional text | |
-| `gps_lat`, `gps_lng` | optional decimal degrees; both must be set together | `33.24451` |
-| `size` | `small` \| `medium` \| `large`, or blank | `small` |
-| `num_instructors`, `years_of_existence`, `estimated_price_per_dive_krw` | optional integer | `2` |
-| `owns_boat`, `tec_diving`, `freediving` | `yes`/`no` (also accepts `true`/`false`, `1`/`0`), or blank for unknown | `yes` |
-| `active` | `yes`/`no`; **blank means `yes`**. Unlike the other booleans this is not tri-state — a club is assumed to be trading unless we have evidence otherwise | `no` |
-| `languages_spoken` | comma-joined language names | `English, Korean` |
-| `certifications` | comma-joined certification names | `PADI, NAUI` |
-| `contact_methods` | semicolon-joined `type:value` pairs; type is one of `email`, `whatsapp`, `kakaotalk`, `mobile_phone`, `instagram` (Instagram stored as bare handle, no `@`, no URL) | `email:a@b.com;mobile_phone:+82-10-1234-5678;instagram:jeju_dive_club` |
-
-Languages and certifications don't need to be predefined — any new name in the CSV is created automatically on import.
-
-### CSV schema (`feedback.csv`)
-
-Feedback lives in its own file because authored summaries and diver quotes are prose — prose can't survive the packed colon/semicolon cell convention used for structured values in `clubs.csv` (issue #17). One row = one feedback entry; a club can have any number of rows.
-
-| Column | Format | Example |
-| --- | --- | --- |
-| `club_id` | required; must match a `club_id` in `clubs.csv` | `5` |
-| `source` | required; one of `naver_blog`, `kakao_map`, `google_maps`, `tripadvisor`, `reddit`, `local_diver` | `naver_blog` |
-| `kind` | `platform` \| `local_diver`; may be left blank (derived from `source`), but must agree when filled | `platform` |
-| `rating` | platform only; 0–5 | `4.5` |
-| `review_count` | platform only; integer ≥ 0 | `12` |
-| `url` | platform only | `https://blog.naver.com/...` |
-| `summary_or_quote` | authored summary (platform, optional) or the diver's quote (local_diver, **required**) | `Reviewers praise the boat dives.` |
-| `author_alias` | local_diver only; anonymized | `instructor, 10y on Jeju` |
-| `quoted_at` | local_diver only; `YYYY-MM-DD` | `2026-08-05` |
-| `lang` | BCP-47 tag of the text | `ko` |
-| `last_checked` | platform only; `YYYY-MM-DD`, flags stale summaries | `2026-08-07` |
-
-Per-kind rules are enforced by validation: a `rating` on a `local_diver` row is an error, a `local_diver` row without a quote is an error, and duplicate (`club_id`, `source`) pairs are rejected for platform rows (one summary per club per source — provenance stays per origin). Multiple `local_diver` rows per club are expected. `author_alias` is deliberately anonymized: nothing attributable to a named person ships without their consent.
-
-### Workflow
-
-**Editing existing clubs or adding new ones:**
-
-1. Open `data/clubs.csv` (or `data/feedback.csv`) in a spreadsheet application or text editor.
-2. Edit existing rows in place (keep their `club_id`), or add a new row with `club_id` left blank. Feedback rows can only reference clubs that already have a `club_id`.
-3. Regenerate the database:
-   ```bash
-   python3 tools/import_csv.py data/clubs.csv public/dive_clubs.db
-   ```
-   This picks up `data/feedback.csv` automatically (override with `--feedback-csv`, or skip deliberately with `--no-feedback`), validates every row in both files first, and prints a clear error report if anything is malformed — it will not touch the database until everything passes. The database is always rebuilt from scratch from the CSVs, so removing a row removes it from the database too.
-4. Run `npm run build` (or `npm run preview`) locally to confirm the dashboard still loads correctly.
-5. Commit `data/clubs.csv`, `data/feedback.csv`, and `public/dive_clubs.db`, then push — GitHub Pages redeploys automatically via the Actions workflow.
-
-**Exporting the current database back to CSV** (e.g. after a manual SQLite edit, or to hand the file to someone else for review):
-
-```bash
-python3 tools/export_csv.py public/dive_clubs.db data/clubs.csv
-```
-
-This writes both files (`data/feedback.csv` lands next to the clubs CSV; override with `--feedback-csv`).
-
-**Validating a CSV without writing a database:**
-
-```bash
-python3 tools/validate.py data/clubs.csv          # also checks data/feedback.csv when present
-# or, equivalently:
-python3 tools/import_csv.py data/clubs.csv public/dive_clubs.db --dry-run
-```
-
-Both commands report every validation issue in both files (missing required fields, out-of-range GPS coordinates, invalid `size`/boolean values, malformed `contact_methods` entries, duplicate `club_id`s, duplicate name+city pairs, unknown feedback sources, per-kind feedback violations, and feedback rows pointing at nonexistent clubs) rather than stopping at the first one.
-
-The tooling in `tools/` (`schema.py`, `db.py`, `validate.py`, `import_csv.py`, `export_csv.py`) has no dependencies beyond the Python 3 standard library.
-
-## Recommended SQLite Constraints
-
-- Keep `clubs.name` unique where possible.
-- Use foreign keys between `clubs` and child tables.
-- Use check constraints for controlled values such as `size`, `contact_type`, and boolean flags.
-- Add indexes on commonly filtered fields if the dataset grows.
-
-## Known Limitations
-
-- Some clubs may have incomplete public data.
-- Feedback data is only as good as the latest manual or scripted update.
-- The dashboard is static and read-only in the browser.
-- Large SQLite databases may need a chunked loading approach such as `sql.js-httpvfs` — currently the whole `.db` file is fetched into memory on load.
-
-## Roadmap
-
-- ~~Add filters for certification, size, language support, and price range.~~ Done — see [Filtering](#filtering).
-- ~~Introduce a central state container as filters/drawer land.~~ Done — see [State Management](#state-management).
-- ~~Make the UI fully multi-lingual with auto-detected language.~~ Done — see [Internationalization](#internationalization).
-- Add map links and address grouping by city or area.
-- ~~Add a club detail drawer with feedback summaries.~~ Done — the drawer shows two conditional sections ([#17](https://github.com/AntoineChalons/jeju-scuba-finder/issues/17)): “Platform reviews” (per-source rating, review count, link, optional authored summary, `last_checked` date with a “may be outdated” badge after 180 days) and “From local divers” (anonymized quotes, newest first). Each section renders only when populated; feedback text renders in its authored language with a `lang` attribute.
-- ~~Add import/export tooling for CSV and SQLite regeneration.~~ Done — see [Data Import/Export Tooling](#data-importexport-tooling).
-- ~~Add automated data validation for required fields.~~ Done — covered by the same tooling; `tools/validate.py` checks required fields, controlled values, GPS ranges, and duplicates.
-- ~~Switch to `sql.js-httpvfs` with chunked loading once the database grows.~~ **Cancelled** — expected scale is at most ~80 clubs, keeping `dive_clubs.db` in the tens/low hundreds of KB (currently 68 KB for 4 clubs), well under the 660 KB sql.js WASM binary already shipped. Chunked HTTP-range loading solves multi-hundred-MB files; at this size it would add real complexity (custom VFS, worker coordination, cache-control tuning) for no measurable benefit. Revisit only if the schema changes to store large blobs (e.g. inline photos) or club count grows by an order of magnitude.
-- ~~Add rendering optimizations (virtualized rows, memoized diffing).~~ **Cancelled** — these solve jank at hundreds/thousands of rendered rows; a full table rebuild on every state change is imperceptible at the ~50-80 row ceiling expected here. Revisit only if row count grows well past that range.
-- Add TypeScript or JSDoc types, ESLint, and Vitest-based tests.
+The loader rejects non-successful database responses. The existing application
+error state then reports that data could not be loaded instead of trying to
+open an invalid response as SQLite.
 
 ## Contributing
 
-Contributions are welcome. Good contribution candidates include:
+Use issues and pull requests in this repository for application changes. Data
+changes require access to the private `jeju-scuba-data` repository.
 
-- Adding or correcting club data.
-- Improving the schema or adding indexes.
-- Enhancing the dashboard UI and accessibility.
-- Adding import scripts or validation checks.
+## License
 
-When contributing data, verify the source and keep the schema consistent with the existing normalized design.
-
-## Acknowledgments
-
-- Jeju dive operators and public map/review listings used as data sources.
-- SQLite and sql.js for enabling browser-side database access.
-- GitHub Pages for static deployment.
-
-## Map and Sorting Behavior
-
-The dashboard includes a Leaflet map that displays clubs with known GPS coordinates. The map and the table are synchronized:
-
-- Clicking a column header changes the active sort criterion.
-- Whenever the sorting criterion changes, the table re-renders and the map updates to reflect the same sorted club set.
-- Clicking a table row highlights the matching club marker on the map.
-- Clicking a map marker highlights the corresponding row in the table.
-
-A **Suggest edits** link is included in the interface and points to the repository issue tracker so users can report incorrect data or missing clubs.
-
-## Filter Bar Behavior
-
-- Filters combine with AND logic: selecting a certification and a max price shows only clubs matching both.
-- Certification and language filters match against individual values in the comma-joined `certifications`/`languages_spoken` fields, not a substring of the raw text.
-- Clubs with no recorded price are excluded once a max-price filter is set, since their eligibility can't be confirmed.
-- The summary line ("Showing X of Y clubs") and the table/map both update together, since they're driven by the same filtered-and-sorted list computed from state on every change.
-- "Reset filters" clears all four filters at once and is disabled whenever the filter bar is already at its default state.
-
-## Data source
-
-Refer to [Jeju Club Research](./data/jeju_club_research_report.md) to understand how data was collected.
+MIT
