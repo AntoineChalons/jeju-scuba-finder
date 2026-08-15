@@ -132,7 +132,7 @@ async function init() {
   subscribe(render);
 
   try {
-    const clubs = await loadClubsFromDb(`${import.meta.env.BASE_URL}dive_clubs.db`);
+    const clubs = await loadClubsFromDb();
     document.getElementById('status').innerHTML = buildDbStatusReport(clubs);
     renderFilterOptions(buildFilterOptions(clubs));
     setState({ clubs });
