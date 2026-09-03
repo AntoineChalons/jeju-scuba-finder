@@ -7,51 +7,66 @@ const CLUBS = [
   {
     club_id: 1,
     name: 'Alpha Divers',
+    club_type: 'scuba',
     size: 'small',
     certifications: 'PADI',
     languages_spoken: 'English, Korean',
     estimated_price_per_dive_krw: 60000,
     owns_boat: 1,
     tec_diving: 0,
-    freediving: 1,
   },
   {
     club_id: 2,
     name: 'Beta Dive',
+    club_type: 'freediving',
     size: 'large',
     certifications: 'PADI, SSI',
     languages_spoken: 'Korean',
     estimated_price_per_dive_krw: 90000,
     owns_boat: 1,
     tec_diving: 1,
-    freediving: 0,
   },
   {
     club_id: 3,
     name: 'Gamma Club',
+    club_type: null,
     size: 'medium',
     certifications: 'NAUI',
     languages_spoken: '',
     estimated_price_per_dive_krw: null,
     owns_boat: null,
     tec_diving: null,
-    freediving: null,
   },
 ];
 
 const ALL = {
+  clubType: 'all',
   certification: 'all',
   size: 'all',
   language: 'all',
   maxPrice: null,
   ownsBoat: false,
   tecDiving: false,
-  freediving: false,
 };
 
 describe('applyFilters', () => {
   it("returns every club when every filter is 'all' and no price cap", () => {
     expect(applyFilters(CLUBS, ALL)).toHaveLength(3);
+  });
+
+  it("keeps only scuba clubs when clubType is 'scuba'", () => {
+    const rows = applyFilters(CLUBS, { ...ALL, clubType: 'scuba' });
+    expect(rows.map(c => c.name)).toEqual(['Alpha Divers']);
+  });
+
+  it("keeps only freediving clubs when clubType is 'freediving'", () => {
+    const rows = applyFilters(CLUBS, { ...ALL, clubType: 'freediving' });
+    expect(rows.map(c => c.name)).toEqual(['Beta Dive']);
+  });
+
+  it('excludes clubs with an unknown club_type when a type is selected', () => {
+    const rows = applyFilters(CLUBS, { ...ALL, clubType: 'scuba' });
+    expect(rows.some(c => c.name === 'Gamma Club')).toBe(false);
   });
 
   it('filters by certification against the comma-joined list', () => {
@@ -88,10 +103,9 @@ describe('applyFilters', () => {
 
   it('combines filters with AND semantics', () => {
     const rows = applyFilters(CLUBS, {
+      ...ALL,
       certification: 'PADI',
-      size: 'all',
       language: 'Korean',
-      maxPrice: null,
     });
     expect(rows.map(c => c.name)).toEqual(['Alpha Divers', 'Beta Dive']);
   });
@@ -128,11 +142,6 @@ describe('applyFilters', () => {
     it('tecDiving=true keeps only clubs with tec_diving === 1', () => {
       const rows = applyFilters(CLUBS, { ...ALL, tecDiving: true });
       expect(rows.map(c => c.name)).toEqual(['Beta Dive']);
-    });
-
-    it('freediving=true keeps only clubs with freediving === 1', () => {
-      const rows = applyFilters(CLUBS, { ...ALL, freediving: true });
-      expect(rows.map(c => c.name)).toEqual(['Alpha Divers']);
     });
 
     it('multiple capability checkboxes AND together', () => {
@@ -178,9 +187,16 @@ describe('buildFilterOptions', () => {
 
   it('returns empty option lists for an empty input', () => {
     expect(buildFilterOptions([])).toEqual({
+      clubType: ['scuba', 'freediving'],
       certification: [],
       size: [],
       language: [],
     });
+  });
+
+  it('always offers both club types, even for an empty input', () => {
+    // club_type is a controlled vocabulary, not data-derived: the option
+    // list must not shrink when the dataset has no freediving club yet.
+    expect(buildFilterOptions([]).clubType).toEqual(['scuba', 'freediving']);
   });
 });

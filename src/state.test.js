@@ -7,13 +7,13 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { getState, setState, setFilter, subscribe } from './state.js';
 
 const DEFAULT_FILTERS = () => ({
+  clubType: 'all',
   certification: 'all',
   size: 'all',
   language: 'all',
   maxPrice: null,
   ownsBoat: false,
   tecDiving: false,
-  freediving: false,
 });
 
 function resetState() {

@@ -4,16 +4,24 @@
 
 import { t } from './i18n/i18n.js';
 
-function optionsHtml(values, allLabel) {
+function optionsHtml(values, allLabel, labelFn = v => v) {
   const opts = [`<option value="all">${allLabel}</option>`];
   for (const v of values) {
-    opts.push(`<option value="${v}">${v}</option>`);
+    opts.push(`<option value="${v}">${labelFn(v)}</option>`);
   }
   return opts.join('');
 }
 
+/** Translate a club_type value ('scuba' | 'freediving') for display. */
+export function clubTypeLabel(value) {
+  if (value === 'scuba') return t('filters.typeScuba');
+  if (value === 'freediving') return t('filters.typeFreediving');
+  return value;
+}
+
 /** Re-render the static filter bar labels (not the dynamic options) for the active locale. */
 export function renderFilterLabels() {
+  document.querySelector('label[for="filter-club-type"]').textContent = t('filters.clubType');
   document.querySelector('label[for="filter-certification"]').textContent = t('filters.certification');
   document.querySelector('label[for="filter-size"]').textContent = t('filters.size');
   document.querySelector('label[for="filter-language"]').textContent = t('filters.language');
@@ -24,12 +32,13 @@ export function renderFilterLabels() {
   // and a <span>, so we set the span text and leave the checkbox alone.
   document.querySelector('#filter-owns-boat + span').textContent = t('filters.ownsBoat');
   document.querySelector('#filter-tec-diving + span').textContent = t('filters.tecDiving');
-  document.querySelector('#filter-freediving + span').textContent = t('filters.freediving');
   document.querySelector('.filter-checks').setAttribute('aria-label', t('filters.capabilities'));
 }
 
 /** Populate the <select> elements once the club dataset has loaded (or locale changes). */
 export function renderFilterOptions(options) {
+  document.getElementById('filter-club-type').innerHTML =
+    optionsHtml(options.clubType, t('filters.allTypes'), clubTypeLabel);
   document.getElementById('filter-certification').innerHTML =
     optionsHtml(options.certification, t('filters.allCertifications'));
   document.getElementById('filter-size').innerHTML =
@@ -40,13 +49,13 @@ export function renderFilterOptions(options) {
 
 /** Reflect the current filters onto the controls (used on state changes). */
 export function syncFilterControls(filters) {
+  document.getElementById('filter-club-type').value = filters.clubType;
   document.getElementById('filter-certification').value = filters.certification;
   document.getElementById('filter-size').value = filters.size;
   document.getElementById('filter-language').value = filters.language;
   document.getElementById('filter-max-price').value = filters.maxPrice ?? '';
   document.getElementById('filter-owns-boat').checked = filters.ownsBoat;
   document.getElementById('filter-tec-diving').checked = filters.tecDiving;
-  document.getElementById('filter-freediving').checked = filters.freediving;
 }
 
 /** Show how many clubs matched vs. the total, and enable/disable reset. */
@@ -61,13 +70,13 @@ export function updateFilterSummary(filteredCount, totalCount) {
 }
 
 function isDefaultFilterUi() {
-  return document.getElementById('filter-certification').value === 'all' &&
+  return document.getElementById('filter-club-type').value === 'all' &&
+    document.getElementById('filter-certification').value === 'all' &&
     document.getElementById('filter-size').value === 'all' &&
     document.getElementById('filter-language').value === 'all' &&
     document.getElementById('filter-max-price').value === '' &&
     !document.getElementById('filter-owns-boat').checked &&
-    !document.getElementById('filter-tec-diving').checked &&
-    !document.getElementById('filter-freediving').checked;
+    !document.getElementById('filter-tec-diving').checked;
 }
 
 /**
@@ -76,6 +85,8 @@ function isDefaultFilterUi() {
  * state store, so it stays easy to test/reuse.
  */
 export function bindFilterHandlers(onChange, onReset) {
+  document.getElementById('filter-club-type')
+    .addEventListener('change', e => onChange('clubType', e.target.value));
   document.getElementById('filter-certification')
     .addEventListener('change', e => onChange('certification', e.target.value));
   document.getElementById('filter-size')
@@ -91,7 +102,5 @@ export function bindFilterHandlers(onChange, onReset) {
     .addEventListener('change', e => onChange('ownsBoat', e.target.checked));
   document.getElementById('filter-tec-diving')
     .addEventListener('change', e => onChange('tecDiving', e.target.checked));
-  document.getElementById('filter-freediving')
-    .addEventListener('change', e => onChange('freediving', e.target.checked));
   document.getElementById('filter-reset').addEventListener('click', onReset);
 }

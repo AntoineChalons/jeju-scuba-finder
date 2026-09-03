@@ -32,6 +32,10 @@ function distinctScalar(clubs, field) {
  */
 export function buildFilterOptions(clubs) {
   return {
+    // club_type is a controlled vocabulary in the data schema (every club
+    // is either 'scuba' or 'freediving'), so the options are fixed rather
+    // than derived — an empty dataset must still offer both types.
+    clubType: ['scuba', 'freediving'],
     certification: distinctFromList(clubs, 'certifications'),
     size: distinctScalar(clubs, 'size'),
     language: distinctFromList(clubs, 'languages_spoken')
@@ -41,6 +45,9 @@ export function buildFilterOptions(clubs) {
 /** Apply the active filters to the full club list, returning a new array. */
 export function applyFilters(clubs, filters) {
   return clubs.filter(c => {
+    if (filters.clubType !== 'all' && c.club_type !== filters.clubType) {
+      return false;
+    }
     if (filters.certification !== 'all' &&
         !splitList(c.certifications).includes(filters.certification)) {
       return false;
@@ -64,7 +71,6 @@ export function applyFilters(clubs, filters) {
     // integers 0/1, so a strict === 1 check keeps null out too.
     if (filters.ownsBoat && c.owns_boat !== 1) return false;
     if (filters.tecDiving && c.tec_diving !== 1) return false;
-    if (filters.freediving && c.freediving !== 1) return false;
     return true;
   });
 }

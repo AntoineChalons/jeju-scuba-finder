@@ -1,5 +1,12 @@
 import { t } from './i18n/i18n.js';
 
+/** Human-readable label for a club_type value ('scuba' | 'freediving'). */
+export function clubTypeLabel(value) {
+  if (value === 'scuba') return t('table.typeScuba');
+  if (value === 'freediving') return t('table.typeFreediving');
+  return value;
+}
+
 export function sortClubs(clubs, sortKey, sortAsc) {
   return [...clubs].sort((a, b) => {
     let av = a[sortKey], bv = b[sortKey];
@@ -23,12 +30,12 @@ function boolBadge(v) {
 export function renderTableHeaders() {
   const keyToI18n = {
     name: 'table.name',
+    club_type: 'table.type',
     size: 'table.size',
     years_of_existence: 'table.years',
     certifications: 'table.certs',
     owns_boat: 'table.boat',
     tec_diving: 'table.tec',
-    freediving: 'table.free',
     estimated_price_per_dive_krw: 'table.price',
     website_url: 'table.website',
     naver_map_url: 'table.naverMap'
@@ -49,12 +56,12 @@ export function renderTable(sortedClubs, selectedClubId, onRowClick) {
     if (c.club_id === selectedClubId) tr.classList.add('selected-row');
     tr.innerHTML = `
       <td>${c.name}</td>
+      <td>${c.club_type ? clubTypeLabel(c.club_type) : empty}</td>
       <td>${c.size || empty}</td>
       <td>${c.years_of_existence ?? empty}</td>
       <td>${c.certifications || empty}</td>
       <td>${boolBadge(c.owns_boat)}</td>
       <td>${boolBadge(c.tec_diving)}</td>
-      <td>${boolBadge(c.freediving)}</td>
       <td>${c.estimated_price_per_dive_krw ? c.estimated_price_per_dive_krw.toLocaleString() : empty}</td>
       <td>${c.website_url ? `<a href="${c.website_url}" target="_blank" rel="noopener noreferrer">${t('table.link')}</a>` : empty}</td>
       <td>${c.naver_map_url ? `<a href="${c.naver_map_url}" target="_blank" rel="noopener noreferrer">${t('table.map')}</a>` : empty}</td>

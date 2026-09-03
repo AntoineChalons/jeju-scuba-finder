@@ -16,7 +16,7 @@ export const LOCALE_META = {
 export const translations = {
   en: {
     title: 'Jeju Dive Club Comparator',
-    subtitle: 'Compare scuba diving clubs on Jeju Island. Click a column header to sort, click a row to highlight it on the map.',
+    subtitle: 'Compare scuba and freediving clubs on Jeju Island. Click a column header to sort, click a row to highlight it on the map.',
     loading: 'Loading database...',
     errorLoading: 'Error loading database: {error}',
     dbStatus: '[DB] rows loaded: {total} | mappable: {mappable} | unmappable: {unmappable}',
@@ -31,7 +31,9 @@ export const translations = {
       certs: 'Certs',
       boat: 'Boat',
       tec: 'Tec',
-      free: 'Free',
+      type: 'Type',
+      typeScuba: 'Scuba',
+      typeFreediving: 'Freediving',
       price: 'Price/dive (KRW)',
       rating: 'Avg rating',
       website: 'Website',
@@ -43,6 +45,10 @@ export const translations = {
       emptyValue: '-'
     },
     filters: {
+      clubType: 'Club type',
+      allTypes: 'All types',
+      typeScuba: 'Scuba diving',
+      typeFreediving: 'Freediving',
       certification: 'Certification',
       size: 'Size',
       language: 'Language',
@@ -56,8 +62,7 @@ export const translations = {
       showingFiltered: 'Showing {filtered} of {total} clubs',
       capabilities: 'Capabilities',
       ownsBoat: 'Owns a boat',
-      tecDiving: 'Tec diving',
-      freediving: 'Freediving'
+      tecDiving: 'Tec diving'
     },
     drawer: {
       title: 'Club details',
@@ -74,7 +79,9 @@ export const translations = {
       certs: 'Certifications',
       boat: 'Owns a boat',
       tec: 'Tec diving',
-      free: 'Freediving',
+      type: 'Type',
+      typeScuba: 'Scuba diving',
+      typeFreediving: 'Freediving',
       price: 'Price/dive',
       website: 'Website',
       naverMap: 'Naver Map',
@@ -115,7 +122,7 @@ export const translations = {
 
   zh: {
     title: '济州岛潜水俱乐部比较器',
-    subtitle: '比较济州岛的潜水俱乐部。点击列标题排序，点击一行以在地图上高亮显示。',
+    subtitle: '比较济州岛的水肺潜水与自由潜水俱乐部。点击列标题排序，点击一行以在地图上高亮显示。',
     loading: '正在加载数据库...',
     errorLoading: '加载数据库时出错：{error}',
     dbStatus: '[数据库] 已加载：{total} | 可定位：{mappable} | 不可定位：{unmappable}',
@@ -130,7 +137,9 @@ export const translations = {
       certs: '认证',
       boat: '船只',
       tec: '技术潜水',
-      free: '自由潜水',
+      type: '类型',
+      typeScuba: '水肺潜水',
+      typeFreediving: '自由潜水',
       price: '每次潜水价格（韩元）',
       rating: '平均评分',
       website: '网站',
@@ -142,6 +151,10 @@ export const translations = {
       emptyValue: '-'
     },
     filters: {
+      clubType: '俱乐部类型',
+      allTypes: '所有类型',
+      typeScuba: '水肺潜水',
+      typeFreediving: '自由潜水',
       certification: '认证',
       size: '规模',
       language: '语言',
@@ -155,8 +168,7 @@ export const translations = {
       showingFiltered: '显示 {filtered} / {total} 家俱乐部',
       capabilities: '装备与项目',
       ownsBoat: '拥有船只',
-      tecDiving: '技术潜水',
-      freediving: '自由潜水'
+      tecDiving: '技术潜水'
     },
     drawer: {
       title: '俱乐部详情',
@@ -173,7 +185,9 @@ export const translations = {
       certs: '认证',
       boat: '拥有船只',
       tec: '技术潜水',
-      free: '自由潜水',
+      type: '类型',
+      typeScuba: '水肺潜水',
+      typeFreediving: '自由潜水',
       price: '每次潜水价格',
       website: '网站',
       naverMap: 'Naver 地图',
@@ -214,7 +228,7 @@ export const translations = {
 
   ja: {
     title: '済州島ダイビングクラブ比較',
-    subtitle: '済州島のスキューバダイビングクラブを比較できます。列の見出しをクリックして並べ替え、行をクリックして地図上でハイライトします。',
+    subtitle: '済州島のスキューバダイビングとフリーダイビングのクラブを比較できます。列の見出しをクリックして並べ替え、行をクリックして地図上でハイライトします。',
     loading: 'データベースを読み込み中...',
     errorLoading: 'データベースの読み込みエラー：{error}',
     dbStatus: '[DB] 読込件数：{total} | 地図表示可：{mappable} | 地図表示不可：{unmappable}',
@@ -229,7 +243,9 @@ export const translations = {
       certs: '認定資格',
       boat: 'ボート所有',
       tec: 'テクニカル',
-      free: 'フリーダイビング',
+      type: 'タイプ',
+      typeScuba: 'スキューバ',
+      typeFreediving: 'フリーダイビング',
       price: '1ダイブ料金（KRW）',
       rating: '平均評価',
       website: 'ウェブサイト',
@@ -241,6 +257,10 @@ export const translations = {
       emptyValue: '-'
     },
     filters: {
+      clubType: 'クラブタイプ',
+      allTypes: 'すべてのタイプ',
+      typeScuba: 'スキューバダイビング',
+      typeFreediving: 'フリーダイビング',
       certification: '認定資格',
       size: '規模',
       language: '対応言語',
@@ -254,8 +274,7 @@ export const translations = {
       showingFiltered: '{total}件中{filtered}件のクラブを表示中',
       capabilities: '対応項目',
       ownsBoat: 'ボート所有',
-      tecDiving: 'テックダイビング',
-      freediving: 'フリーダイビング'
+      tecDiving: 'テックダイビング'
     },
     drawer: {
       title: 'クラブ詳細',
@@ -272,7 +291,9 @@ export const translations = {
       certs: '認定資格',
       boat: 'ボート所有',
       tec: 'テクニカルダイビング',
-      free: 'フリーダイビング',
+      type: 'タイプ',
+      typeScuba: 'スキューバダイビング',
+      typeFreediving: 'フリーダイビング',
       price: '1ダイブ料金',
       website: 'ウェブサイト',
       naverMap: 'Naver マップ',
@@ -312,8 +333,8 @@ export const translations = {
   },
 
   ko: {
-    title: '제주 스쿠버다이빙 클럽 비교',
-    subtitle: '제주도의 스쿠버다이빙 클럽을 비교해 보세요. 열 제목을 클릭하면 정렬되고, 행을 클릭하면 지도에서 강조 표시됩니다.',
+    title: '제주 다이빙 클럽 비교',
+    subtitle: '제주도의 스쿠버다이빙과 프리다이빙 클럽을 비교해 보세요. 열 제목을 클릭하면 정렬되고, 행을 클릭하면 지도에서 강조 표시됩니다.',
     loading: '데이터베이스를 불러오는 중...',
     errorLoading: '데이터베이스 로딩 오류: {error}',
     dbStatus: '[DB] 불러온 행: {total} | 지도 표시 가능: {mappable} | 지도 표시 불가: {unmappable}',
@@ -328,7 +349,9 @@ export const translations = {
       certs: '자격증',
       boat: '보트 보유',
       tec: '테크니컬',
-      free: '프리다이빙',
+      type: '유형',
+      typeScuba: '스쿠버',
+      typeFreediving: '프리다이빙',
       price: '다이빙당 가격(원)',
       rating: '평균 평점',
       website: '웹사이트',
@@ -340,6 +363,10 @@ export const translations = {
       emptyValue: '-'
     },
     filters: {
+      clubType: '클럽 유형',
+      allTypes: '전체 유형',
+      typeScuba: '스쿠버다이빙',
+      typeFreediving: '프리다이빙',
       certification: '자격증',
       size: '규모',
       language: '지원 언어',
@@ -353,8 +380,7 @@ export const translations = {
       showingFiltered: '{total}개 중 {filtered}개 클럽 표시 중',
       capabilities: '지원 항목',
       ownsBoat: '보트 보유',
-      tecDiving: '테크니컬 다이빙',
-      freediving: '프리다이빙'
+      tecDiving: '테크니컬 다이빙'
     },
     drawer: {
       title: '클럽 상세정보',
@@ -371,7 +397,9 @@ export const translations = {
       certs: '자격증',
       boat: '보트 보유',
       tec: '테크니컬 다이빙',
-      free: '프리다이빙',
+      type: '유형',
+      typeScuba: '스쿠버다이빙',
+      typeFreediving: '프리다이빙',
       price: '다이빙당 가격',
       website: '웹사이트',
       naverMap: '네이버 지도',
