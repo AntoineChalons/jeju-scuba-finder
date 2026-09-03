@@ -197,6 +197,12 @@ function feedbackHtml(club) {
   return sections.join('');
 }
 
+/** Translated club_type value for the About section, or null when unknown. */
+function typeValue(v) {
+  if (v !== 'scuba' && v !== 'freediving') return null;
+  return esc(v === 'scuba' ? t('drawer.typeScuba') : t('drawer.typeFreediving'));
+}
+
 function bodyHtml(club) {
   const price = club.estimated_price_per_dive_krw
     ? esc(club.estimated_price_per_dive_krw.toLocaleString()) + ' KRW'
@@ -207,6 +213,7 @@ function bodyHtml(club) {
       <dl class="drawer-list">
         ${row('city', esc(club.city))}
         ${row('address', esc(club.full_address))}
+        ${row('type', typeValue(club.club_type))}
         ${row('size', esc(club.size))}
         ${row('instructors', esc(club.num_instructors))}
         ${row('years', esc(club.years_of_existence))}
@@ -214,7 +221,6 @@ function bodyHtml(club) {
         ${row('certs', esc(club.certifications))}
         ${row('boat', boolValue(club.owns_boat))}
         ${row('tec', boolValue(club.tec_diving))}
-        ${row('free', boolValue(club.freediving))}
         ${row('price', price)}
         ${row('website', linkValue(club.website_url, 'website'))}
         ${row('naverMap', linkValue(club.naver_map_url, 'naverMap'))}

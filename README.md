@@ -1,13 +1,14 @@
-# Jeju Scuba-diving Club Finder
+# Jeju Dive Club Finder
 
-A static, browser-based dashboard for comparing scuba diving clubs on Jeju
-Island.
+A static, browser-based dashboard for comparing scuba-diving and
+freediving clubs on Jeju Island.
 
 ## Features
 
 - Sortable club comparison table.
+- Club type filter (scuba-diving or freediving).
 - Filters for certification, club size, language, price, boat ownership,
-  technical diving, and freediving.
+  and technical diving.
 - Interactive MapLibre map.
 - Club detail drawer with contacts and feedback.
 - English, Chinese, Japanese, and Korean UI.

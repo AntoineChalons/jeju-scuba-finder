@@ -13,6 +13,7 @@ const state = {
   selectedClubId: null,
   locale: 'en',        // active UI language; set from i18n before first render
   filters: {
+    clubType: 'all',        // 'all' | 'scuba' | 'freediving'
     certification: 'all',   // 'all' | one certification name
     size: 'all',            // 'all' | 'small' | 'medium' | 'large'
     language: 'all',        // 'all' | one language name
@@ -21,8 +22,7 @@ const state = {
     // true = keep only clubs whose column is truthy. Unknown values are
     // excluded when a checkbox is on, matching the maxPrice rule.
     ownsBoat: false,
-    tecDiving: false,
-    freediving: false
+    tecDiving: false
   }
 };
 
