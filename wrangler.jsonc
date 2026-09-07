@@ -1,0 +1,9 @@
+{
+  "name": "divingjeju",
+  "compatibility_date": "2026-09-07",
+  "assets": {
+    // Static site built by Vite (`npm run build`) before `wrangler deploy` runs.
+    // Served by a Cloudflare Worker with static assets on divingjeju.com.
+    "directory": "./dist"
+  }
+}
