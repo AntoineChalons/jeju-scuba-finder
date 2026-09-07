@@ -72,7 +72,9 @@ folder as static assets, configured by `wrangler.jsonc` in the repo root.
 2. Connect the GitHub account if needed, grant access to
    `AntoineChalons/jeju-scuba-finder`.
 3. Select the repository. Set:
-   - Project name: `divingjeju` — must match `name` in `wrangler.jsonc`
+   - Project name: `jeju-scuba-finder` — must match `name` in
+     `wrangler.jsonc` (the preview URL becomes
+     `jeju-scuba-finder.<account-subdomain>.workers.dev`)
    - Production branch: `main`
    - Build command: `npm run build`
    - Deploy command: `npx wrangler deploy` (default, leave it)
@@ -93,8 +95,8 @@ folder as static assets, configured by `wrangler.jsonc` in the repo root.
 
 ### 5. Attach the custom domain
 
-1. Open the `divingjeju` Worker, then `Settings`, then
-   `Domains & Routes`.
+1. Open the `jeju-scuba-finder` Worker, then the `Domains` tab (or
+   `Settings` → `Domains & Routes`).
 2. Click `Add`, then `Custom domain`, enter `divingjeju.com`, confirm.
 3. The zone is on the same Cloudflare account, so the DNS record is
    created automatically. The certificate is issued within minutes.
