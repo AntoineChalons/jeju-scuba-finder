@@ -2,13 +2,14 @@
 
 This guide records the migration of the site from
 `https://antoinechalons.github.io/jeju-scuba-finder/` to
-`https://divingjeju.com/`, published through Cloudflare Pages.
+`https://divingjeju.com/`, published through Cloudflare.
 
 The domain `divingjeju.com` was purchased at Spaceship for two years.
 The Cloudflare account that already serves `capartencoree.com` is used
-again. The publishing pattern is the same as `AntoineChalons/matcast`:
-Cloudflare Pages builds the `main` branch through its Git integration,
-and GitHub Actions only runs the CI gate.
+again. The publishing pattern uses the Cloudflare Workers Git
+integration (build with `npm run build`, deploy with `npx wrangler deploy`
+through `wrangler.jsonc` static assets). GitHub Actions only runs the CI
+gate, the same separation as `AntoineChalons/matcast`.
 
 ## Current state after the automated changes
 
@@ -60,23 +61,31 @@ session. Do them in this order.
 4. Save. Propagation takes up to 24 hours; usually less than 1 hour.
    Cloudflare sends an email when the zone is active.
 
-### 3. Create the Cloudflare Pages project
+### 3. Create the Cloudflare project (Workers Git integration)
 
-1. In Cloudflare, go to `Workers & Pages`, then `Create`, then
-   `Pages`, then `Connect to Git`.
-2. Authorize the GitHub connection if not already done for `matcast`,
-   and grant access to `AntoineChalons/jeju-scuba-finder`.
-3. Select the repository and start the setup:
-   - Project name: `divingjeju` (this gives `divingjeju.pages.dev`).
-   - Production branch: `main`.
-   - Build command: `npm run build`.
-   - Build output directory: `dist`.
-   - Environment variable: `NODE_VERSION` = `24` (matches CI).
+The dashboard uses the unified Workers flow (not the old Pages flow).
+The project deploys through `npx wrangler deploy` and serves the `dist`
+folder as static assets, configured by `wrangler.jsonc` in the repo root.
+
+1. In Cloudflare, go to `Workers & Pages`, then `Create application`,
+   then `Import a repository`.
+2. Connect the GitHub account if needed, grant access to
+   `AntoineChalons/jeju-scuba-finder`.
+3. Select the repository. Set:
+   - Project name: `divingjeju` — must match `name` in `wrangler.jsonc`
+   - Production branch: `main`
+   - Build command: `npm run build`
+   - Deploy command: `npx wrangler deploy` (default, leave it)
+   - `Build for non-production branches`: off
+   - `Protect with Cloudflare Access`: off
+   - Add build variable `NODE_VERSION` = `24` if the form offers it
+     (otherwise add it later under Settings → Builds → Variables)
 4. Save and deploy. The first build runs on the current `main`.
 
 ### 4. Verify the preview URL
 
-1. Open `https://divingjeju.pages.dev/` after the build finishes.
+1. Open the `workers.dev` URL shown at the top of the deployment
+   (`https://divingjeju.<account-subdomain>.workers.dev`).
 2. Confirm that the club table loads, the map draws, and the language
    switcher works. If the database fetch fails, check the browser console
    for CORS errors; GitHub Pages must answer with
@@ -84,15 +93,14 @@ session. Do them in this order.
 
 ### 5. Attach the custom domain
 
-1. In the Pages project, `Custom domains`, `Set up a custom domain`,
-   enter `divingjeju.com`.
-2. The zone is on the same Cloudflare account, so the CNAME record to
-   `divingjeju.pages.dev` is added automatically. Confirm it.
-3. Cloudflare issues the certificate. Status `Active` usually takes
-   minutes.
+1. Open the `divingjeju` Worker, then `Settings`, then
+   `Domains & Routes`.
+2. Click `Add`, then `Custom domain`, enter `divingjeju.com`, confirm.
+3. The zone is on the same Cloudflare account, so the DNS record is
+   created automatically. The certificate is issued within minutes.
 4. Open `https://divingjeju.com/` and repeat the checks from step 4.
-5. Also register the `www.divingjeju.com` variant in the same screen and
-   add a redirect rule to the apex, or keep the Pages redirect default.
+5. Optionally add `www.divingjeju.com` the same way, then add a redirect
+   rule to the apex domain.
 
 ### 6. Update the GitHub Pages settings page
 
@@ -104,11 +112,11 @@ check stays behind.
 ## Post-migration checks
 
 - [ ] `https://divingjeju.com/` serves the app with a valid certificate
-- [ ] `https://divingjeju.pages.dev/` also serves the app
+- [ ] The `workers.dev` URL also serves the app
 - [ ] The club database loads (check the Network tab for
       `dive_clubs.db`, status 200)
 - [ ] A push to `main` triggers both the GitHub Actions CI gate and a
-      new Cloudflare Pages build
+      new Cloudflare build and deploy
 - [ ] A pull request triggers the CI gate only
 - [ ] The old GitHub Pages URL no longer serves the app (expected)
 

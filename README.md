@@ -158,9 +158,10 @@ Do not edit `dive_clubs.db` directly. The next publication run will replace it.
 
 ## Application deployment
 
-The site is published on Cloudflare Pages at `https://divingjeju.com/`.
-Cloudflare Pages is connected to this repository and builds `main` with
-`npm run build` (output directory `dist`).
+The site is published on Cloudflare at `https://divingjeju.com/`.
+Cloudflare's Workers Git integration builds `main` with
+`npm run build` and deploys the `dist` folder as static assets through
+`wrangler.jsonc` (`npx wrangler deploy`).
 
 Every push to `main` and every pull request against `main` also runs the
 GitHub Actions CI gate (ESLint, JavaScript unit tests, Vite build).
