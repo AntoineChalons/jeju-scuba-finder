@@ -36,4 +36,13 @@ export default [
       },
     },
   },
+  {
+    // Build-time prerender script: runs in Node only.
+    files: ['tools/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
 ];

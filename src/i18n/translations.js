@@ -15,7 +15,7 @@ export const LOCALE_META = {
 
 export const translations = {
   en: {
-    title: 'Jeju Dive Club Comparator',
+    title: 'Jeju Scuba Diving — Compare Dive Clubs on Jeju Island',
     subtitle: 'Compare scuba and freediving clubs on Jeju Island. Click a column header to sort, click a row to highlight it on the map.',
     loading: 'Loading database...',
     errorLoading: 'Error loading database: {error}',
@@ -121,7 +121,7 @@ export const translations = {
   },
 
   zh: {
-    title: '济州岛潜水俱乐部比较器',
+    title: '济州岛潜水 — 济州岛潜水俱乐部对比',
     subtitle: '比较济州岛的水肺潜水与自由潜水俱乐部。点击列标题排序，点击一行以在地图上高亮显示。',
     loading: '正在加载数据库...',
     errorLoading: '加载数据库时出错：{error}',
@@ -227,7 +227,7 @@ export const translations = {
   },
 
   ja: {
-    title: '済州島ダイビングクラブ比較',
+    title: '済州島ダイビング — 済州島ダイビングショップ比較',
     subtitle: '済州島のスキューバダイビングとフリーダイビングのクラブを比較できます。列の見出しをクリックして並べ替え、行をクリックして地図上でハイライトします。',
     loading: 'データベースを読み込み中...',
     errorLoading: 'データベースの読み込みエラー：{error}',
@@ -333,7 +333,7 @@ export const translations = {
   },
 
   ko: {
-    title: '제주 다이빙 클럽 비교',
+    title: '제주 스쿠버 다이빙 — 제주 다이빙 샵 비교',
     subtitle: '제주도의 스쿠버다이빙과 프리다이빙 클럽을 비교해 보세요. 열 제목을 클릭하면 정렬되고, 행을 클릭하면 지도에서 강조 표시됩니다.',
     loading: '데이터베이스를 불러오는 중...',
     errorLoading: '데이터베이스 로딩 오류: {error}',

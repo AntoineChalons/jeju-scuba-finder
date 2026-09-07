@@ -166,6 +166,39 @@ Cloudflare's Workers Git integration builds `main` with
 Every push to `main` and every pull request against `main` also runs the
 GitHub Actions CI gate (ESLint, JavaScript unit tests, Vite build).
 
+## SEO build layer
+
+`npm run build` does two things:
+
+1. `vite build` produces the SPA in `dist/`.
+2. `tools/prerender.mjs` downloads the published `dive_clubs.db`, writes
+   one static page per active club to `dist/clubs/<slug>/`, fills the
+   PADI / SSI / all-clubs sections of the home page, and writes
+   `dist/sitemap.xml`.
+
+The prerender step fails the build when the database cannot be fetched or
+contains no active clubs — an unindexable catalogue must never ship.
+
+Build-time environment variables (all optional):
+
+| Variable | Purpose |
+|---|---|
+| `DIVE_DATABASE_URL` | Override the database source (defaults to the `public-data` artifact) |
+| `SITE_URL` | Canonical origin, defaults to `https://divingjeju.com` |
+| `CF_WEB_ANALYTICS_TOKEN` | Cloudflare Web Analytics beacon token (issue #27) |
+| `GOOGLE_SITE_VERIFICATION` | Google Search Console meta tag content (issue #27) |
+| `NAVER_SITE_VERIFICATION` | Naver Search Advisor meta tag content (issue #27) |
+| `BING_SITE_VERIFICATION` | Bing Webmaster Tools meta tag content (issue #27) |
+
+### Analytics and search consoles
+
+The Cloudflare Web Analytics beacon is injected into every page only when
+`CF_WEB_ANALYTICS_TOKEN` is set at build time; local builds and CI builds
+without the token ship no tracking at all. To enable it in production, set
+the build variable on the Cloudflare Workers project (Settings → Builds →
+Variables) after creating the site in Cloudflare → Analytics & Logs → Web
+Analytics. The beacon is cookieless, so no consent banner is required.
+
 The application deployment does not build or publish club data. The private
 data workflow owns that responsibility. The production app loads its database
 from the `public-data` GitHub Pages URL, which is a different publication and

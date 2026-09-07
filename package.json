@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node tools/prerender.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run"

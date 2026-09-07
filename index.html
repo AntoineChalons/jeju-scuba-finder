@@ -4,7 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>Jeju Dive Club Comparator</title>
+<title>Jeju Scuba Diving — Compare Dive Clubs on Jeju Island</title>
+<meta name="description" content="Compare every scuba diving and freediving club on Jeju Island in one place: PADI and SSI certifications, price per dive, club size, languages spoken, boat and technical diving, on an interactive map.">
+<link rel="canonical" href="https://divingjeju.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Diving Jeju">
+<meta property="og:title" content="Jeju Scuba Diving — Compare Dive Clubs on Jeju Island">
+<meta property="og:description" content="Every scuba and freediving club on Jeju Island: certifications, prices, languages and boat access, compared on one map.">
+<meta property="og:url" content="https://divingjeju.com/">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"Diving Jeju","alternateName":"Jeju Scuba Finder","url":"https://divingjeju.com/"}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do I need a license to dive in Jeju?","acceptedAnswer":{"@type":"Answer","text":"No. Most Jeju dive clubs offer first-time programs where you dive with an instructor after a short briefing, no license required. To dive independently, take an Open Water course — PADI and SSI are the most common agencies on the island."}},{"@type":"Question","name":"How much does scuba diving cost in Jeju?","acceptedAnswer":{"@type":"Answer","text":"A typical fun dive costs roughly 60,000 to 100,000 KRW per dive depending on the club. First-time programs and license courses cost more. Use the price filter to compare clubs."}},{"@type":"Question","name":"Can I dive in Jeju in winter?","acceptedAnswer":{"@type":"Answer","text":"Yes. Jeju is diveable all year. Water temperature ranges from about 14°C in winter to 27°C in summer, and visibility is often best in the colder months."}},{"@type":"Question","name":"Which certification agencies operate on Jeju?","acceptedAnswer":{"@type":"Answer","text":"PADI and SSI are the most widespread, and several clubs also work with NAUI, CMAS, SDI/TDI, KLSA and AIDA for freediving."}}]}
+</script>
 <script type="module" src="/src/main.js"></script>
 <style>
 :root{
@@ -399,6 +413,51 @@ a{color:#7fd8f5;}
   /* Stop the page scrolling behind the sheet. */
   body.drawer-open{overflow:hidden;}
 }
+
+/* Static SEO content sections (issues #25, #32). Rendered as plain HTML
+   so the catalogue is visible to crawlers without JavaScript; the lists
+   inside are filled by the build-time prerender step. */
+.seo-content{
+  max-width:1000px;
+  margin:36px auto 0;
+  padding-top:24px;
+  border-top:1px solid var(--border);
+  font-size:14px;
+  line-height:1.65;
+}
+.seo-content h2{
+  color:var(--accent);
+  font-size:17px;
+  margin:28px 0 8px;
+}
+.seo-content p{
+  margin:0 0 10px;
+}
+.seo-content ul{
+  list-style:none;
+  margin:8px 0;
+  padding:0;
+  columns:2;
+  column-gap:32px;
+}
+.seo-content li{
+  margin:2px 0;
+  break-inside:avoid;
+}
+.seo-content a{color:var(--accent);}
+.seo-content .club-city{color:var(--text-muted);}
+.seo-content details{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:8px 14px;
+  margin:8px 0;
+}
+.seo-content summary{cursor:pointer;color:var(--text);font-weight:600;}
+.seo-content details p{margin:8px 0 2px;color:var(--text-muted);}
+@media (max-width:700px){
+  .seo-content ul{columns:1;}
+}
 </style>
 </head>
 <body>
@@ -475,5 +534,42 @@ a{color:#7fd8f5;}
 <div class="footer-links">
   <span id="footer-prompt">Spotted an error or missing club?</span> <a id="footer-link" href="https://github.com/antoinechalons/jeju-scuba-finder/issues/new" target="_blank" rel="noopener noreferrer">Suggest edits on GitHub</a>
 </div>
+
+<section class="seo-content" aria-label="About scuba diving in Jeju">
+  <h2>Scuba diving in Jeju Island</h2>
+  <p>Jeju Island is the main dive destination in South Korea. Warm currents, volcanic rock formations and soft coral gardens make the south coast around Seogwipo — Munseom, Beomseom and Seopseom — the most dived area, with more clubs per square kilometre than anywhere else in the country. Diving runs all year: water temperature moves between roughly 14&deg;C in winter and 27&deg;C in summer, and visibility is often at its best in the colder months.</p>
+  <p>This page lists every scuba diving and freediving club on Jeju Island that we could verify, in one sortable table and map. Filter by certification agency (PADI, SSI, NAUI, CMAS, SDI/TDI), price per dive, club size, spoken language, boat ownership and technical diving support, then compare clubs side by side before you book.</p>
+  <p>First time diving? Most clubs run introduction programs with an instructor, no license needed. Already certified? Compare fun-dive prices and course prices across clubs below.</p>
+
+  <h2>PADI dive clubs in Jeju</h2>
+  <p>Clubs on Jeju Island that offer PADI courses and fun dives:</p>
+  <ul id="seo-padi-list" class="club-list"></ul>
+
+  <h2>SSI dive clubs in Jeju</h2>
+  <p>Clubs on Jeju Island that offer SSI courses and fun dives:</p>
+  <ul id="seo-ssi-list" class="club-list"></ul>
+
+  <h2>Frequently asked questions</h2>
+  <details>
+    <summary>Do I need a license to dive in Jeju?</summary>
+    <p>No. Most Jeju dive clubs offer first-time programs where you dive with an instructor after a short briefing. To dive independently, take an Open Water course — PADI and SSI are the most common agencies on the island.</p>
+  </details>
+  <details>
+    <summary>How much does scuba diving cost in Jeju?</summary>
+    <p>A typical fun dive costs roughly 60,000 to 100,000 KRW per dive depending on the club. First-time programs and license courses cost more. Use the price filter to compare clubs.</p>
+  </details>
+  <details>
+    <summary>Can I dive in Jeju in winter?</summary>
+    <p>Yes. Jeju is diveable all year. Water temperature ranges from about 14&deg;C in winter to 27&deg;C in summer, and visibility is often best in the colder months.</p>
+  </details>
+  <details>
+    <summary>Which certification agencies operate on Jeju?</summary>
+    <p>PADI and SSI are the most widespread, and several clubs also work with NAUI, CMAS, SDI/TDI, KLSA and AIDA for freediving.</p>
+  </details>
+
+  <h2>All Jeju dive clubs</h2>
+  <p>Every club in the catalogue, with its own details page:</p>
+  <ul id="seo-directory-list" class="club-list"></ul>
+</section>
 </body>
 </html>
