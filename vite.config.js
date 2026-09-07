@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
 
-// GitHub Pages project sites are served from a subpath (e.g. /jeju-scuba-finder/),
-// so asset URLs must be relative rather than absolute.
+// The site is served from the domain root of divingjeju.com on Cloudflare
+// Pages, so asset URLs use the standard absolute root path.
 export default defineConfig({
-  base: './',
+  base: '/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

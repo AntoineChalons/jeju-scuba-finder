@@ -13,7 +13,7 @@ freediving clubs on Jeju Island.
 - Club detail drawer with contacts and feedback.
 - English, Chinese, Japanese, and Korean UI.
 - Client-side SQLite queries through sql.js.
-- Static GitHub Pages deployment with no application server.
+- Static Cloudflare Pages deployment on divingjeju.com with no application server.
 
 ## Data architecture
 
@@ -43,8 +43,7 @@ database files to this repository.
 ```text
 .
 ├── .github/workflows/
-│   ├── ci.yml
-│   └── deploy.yml
+│   └── ci.yml
 ├── public/
 │   └── favicon.svg
 ├── src/
@@ -159,15 +158,19 @@ Do not edit `dive_clubs.db` directly. The next publication run will replace it.
 
 ## Application deployment
 
-Pushes to `main` run:
+The site is published on Cloudflare Pages at `https://divingjeju.com/`.
+Cloudflare Pages is connected to this repository and builds `main` with
+`npm run build` (output directory `dist`).
 
-1. ESLint.
-2. JavaScript unit tests.
-3. The Vite production build.
-4. GitHub Pages deployment.
+Every push to `main` and every pull request against `main` also runs the
+GitHub Actions CI gate (ESLint, JavaScript unit tests, Vite build).
 
 The application deployment does not build or publish club data. The private
-data workflow owns that responsibility.
+data workflow owns that responsibility. The production app loads its database
+from the `public-data` GitHub Pages URL, which is a different publication and
+stays online.
+
+The migration steps are recorded in `docs/deploy-divingjeju-com.md`.
 
 ## Failure behavior
 

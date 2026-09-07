@@ -1,11 +1,14 @@
-# PR gate. The existing `deploy.yml` runs the same checks on `push: main`
-# so the deployed artifact is guaranteed clean, but nothing was blocking
-# a PR before it merged. This workflow adds that gate: any PR against
-# main runs lint + JS tests + build, and merging is
-# blocked until they pass.
+# CI gate for the Cloudflare Pages deployment of divingjeju.com.
+# Publishing is done by Cloudflare Pages, which builds `main` through its
+# own Git integration (same pattern as AntoineChalons/matcast for
+# capartencoree.com). This workflow only verifies that the branch builds.
+# It runs on pull requests against main and on every push to main, so the
+# branch Cloudflare publishes from is always guaranteed clean.
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
